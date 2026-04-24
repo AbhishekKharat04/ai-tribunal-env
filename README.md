@@ -15,6 +15,12 @@ tags:
 
 [![OpenEnv](https://img.shields.io/badge/OpenEnv-compatible-blue)](https://github.com/meta-pytorch/OpenEnv)
 
+## 📌 Submission Links
+- **Hugging Face Space:** [https://huggingface.co/spaces/AbhishekKharat11/ai-tribunal-env](https://huggingface.co/spaces/AbhishekKharat11/ai-tribunal-env)
+- **GitHub Repository:** [https://github.com/AbhishekKharat04/ai-tribunal-env](https://github.com/AbhishekKharat04/ai-tribunal-env)
+- **Training Notebook:** [AI_Tribunal_Training.ipynb](AI_Tribunal_Training.ipynb) (Included in repo)
+- **Blog Post:** [blog.md](blog.md) (Included in repo)
+
 > **An RL training environment where AI agents learn to judge adversarial legal cases — detecting fabricated evidence, resisting manipulation, and maintaining consistent jurisprudence across episodes.**
 
 ---
