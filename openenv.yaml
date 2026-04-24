@@ -1,0 +1,46 @@
+name: ai_tribunal_env
+version: 0.1.0
+description: >
+  AI Tribunal Environment. An agent acts as a judge across 3 adversarial
+  legal cases — consumer dispute, employment termination, and property fraud.
+  Key mechanic: Precedent Consistency Engine penalises agents that rule
+  inconsistently across similar cases, testing cross-episode jurisprudential
+  reasoning. Evidence contains hidden truth values — agents must detect
+  fabrications. Parties actively attempt manipulation.
+author: Abhishek Kharat
+license: MIT
+tags:
+  - openenv
+  - legal-reasoning
+  - adversarial
+  - multi-agent
+  - long-horizon
+
+tasks:
+  - id: task_1
+    name: Consumer_Product_Dispute
+    level: easy
+    max_steps: 8
+  - id: task_2
+    name: Employment_Termination_Dispute
+    level: medium
+    max_steps: 15
+  - id: task_3
+    name: Property_Title_Fraud
+    level: hard
+    max_steps: 25
+
+environment:
+  reward_range: [0.0, 1.0]
+  max_episode_steps: 25
+
+docker:
+  dockerfile: Dockerfile
+  port: 7860
+  env_vars:
+    TASK_LEVEL: "1"
+    ENABLE_WEB_INTERFACE: "true"
+
+huggingface:
+  space_sdk: docker
+  hardware: cpu-basic
