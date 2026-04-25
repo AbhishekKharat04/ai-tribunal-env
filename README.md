@@ -21,6 +21,17 @@ tags:
 - **Training Notebook:** [AI Tribunal — GRPO Training (Kaggle)](https://www.kaggle.com/code/abhishekkharat04/ai-tribunal-grpo-training)
 - **Blog Post:** [blog.md](blog.md) (Included in repo)
 
+## Judge Quick Start
+
+If you are evaluating the project, you do **not** need to run anything locally or download the linked models.
+
+1. Open the Hugging Face Space.
+2. Start with **Task 1 / Easy**.
+3. Use the built-in guided tour or the `?` help button in the courtroom UI.
+4. Inspect suspicious evidence, question the relevant side, then issue a ruling.
+
+Local setup is only needed if you want to reproduce training runs or call the HTTP API directly.
+
 > **An RL training environment where AI agents learn to judge adversarial legal cases — detecting fabricated evidence, resisting manipulation, and maintaining consistent jurisprudence across episodes.**
 
 ---

@@ -8,6 +8,178 @@ let currentAction = "examine_evidence";
 let gameState = null;
 let isDone = false;
 let gameSessionId = null;
+const TOUR_STORAGE_KEY = "ai-tribunal-tour-seen";
+const TOUR_STEPS = [
+    {
+        anchor: ".parties-panel",
+        title: "Read both sides first",
+        body: "Start by comparing the plaintiff and defendant stories. The job is not to trust the loudest side, but to notice where the stories stop lining up.",
+        tip: "Use the manipulation panel as a warning system. It should make you curious, not replace your reasoning."
+    },
+    {
+        anchor: ".evidence-board",
+        title: "Treat evidence like a forensic board",
+        body: "Click any evidence card to target it. High credibility does not guarantee truth, and low credibility does not automatically mean fabrication.",
+        tip: "A good first move is usually to inspect the evidence item that feels too convenient, too late, or too polished."
+    },
+    {
+        anchor: ".action-panel",
+        title: "Choose the right courtroom move",
+        body: "Use Examine to inspect materials, question either side when their story has gaps, and use RULE only when you can clearly justify the verdict in writing.",
+        tip: "If you are unsure what to do next, follow the Judge Playbook in the action panel."
+    },
+    {
+        anchor: ".hud-center",
+        title: "Watch the score and step budget",
+        body: "You have limited steps. The HUD shows how far you are into the hearing, how your total score is evolving, and whether your ruling stays consistent with earlier cases in the same session.",
+        tip: "Do not spend every move. The best hearing is decisive, not noisy."
+    },
+    {
+        anchor: "#btn-submit",
+        title: "Submit with intent",
+        body: "Every action should have a target or a written reason that explains what you are testing. When you switch to RULE, write the judgment like you would defend it on appeal.",
+        tip: "You can reopen this guide any time with the help button in the top-right corner."
+    }
+];
+const ACTION_GUIDANCE = {
+    examine_evidence: {
+        title: "Start with Examine",
+        body: "Click an evidence card to auto-fill the target box, then explain what looks suspicious, inconsistent, or surprisingly strong."
+    },
+    question_plaintiff: {
+        title: "Use this when the plaintiff story has gaps",
+        body: "Ask the plaintiff when dates, receipts, timelines, or claimed damages do not fully connect to the evidence on the board."
+    },
+    question_defendant: {
+        title: "Use this when the defense feels evasive",
+        body: "Question the defendant when a policy, inspection, or internal record looks manufactured, incomplete, or strategically timed."
+    },
+    rule: {
+        title: "Rule only when you can defend it",
+        body: "Select the verdict only after you have tested the suspicious evidence. The judgment text should explain why your ruling survives scrutiny."
+    }
+};
+let tourStepIndex = 0;
+let highlightedTourElement = null;
+
+function hasSeenTour() {
+    try {
+        return window.localStorage.getItem(TOUR_STORAGE_KEY) === "true";
+    } catch (_err) {
+        return false;
+    }
+}
+
+function markTourSeen() {
+    try {
+        window.localStorage.setItem(TOUR_STORAGE_KEY, "true");
+    } catch (_err) {
+        // Ignore storage failures and keep the tour usable.
+    }
+}
+
+function clearTourHighlight() {
+    if (highlightedTourElement) {
+        highlightedTourElement.classList.remove("tour-focus");
+        highlightedTourElement = null;
+    }
+}
+
+function applyTourHighlight(selector) {
+    clearTourHighlight();
+    if (!selector) return;
+
+    const target = document.querySelector(selector);
+    if (!target) return;
+
+    highlightedTourElement = target;
+    highlightedTourElement.classList.add("tour-focus");
+    highlightedTourElement.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+}
+
+function renderTour() {
+    const step = TOUR_STEPS[tourStepIndex];
+    if (!step) return;
+
+    document.getElementById("tour-progress").textContent = `Step ${tourStepIndex + 1} of ${TOUR_STEPS.length}`;
+    document.getElementById("tour-title").textContent = step.title;
+    document.getElementById("tour-body").textContent = step.body;
+    document.getElementById("tour-tip").textContent = step.tip;
+    document.getElementById("tour-prev").disabled = tourStepIndex === 0;
+    document.getElementById("tour-next").textContent = tourStepIndex === TOUR_STEPS.length - 1 ? "Finish" : "Next";
+
+    applyTourHighlight(step.anchor);
+}
+
+function openTour(stepIndex = 0) {
+    const overlay = document.getElementById("tour-overlay");
+    if (!overlay) return;
+
+    tourStepIndex = Math.max(0, Math.min(stepIndex, TOUR_STEPS.length - 1));
+    overlay.classList.remove("hidden");
+    renderTour();
+}
+
+function closeTour() {
+    const overlay = document.getElementById("tour-overlay");
+    if (overlay) {
+        overlay.classList.add("hidden");
+    }
+    clearTourHighlight();
+    markTourSeen();
+}
+
+function nextTourStep() {
+    if (tourStepIndex >= TOUR_STEPS.length - 1) {
+        closeTour();
+        return;
+    }
+    tourStepIndex += 1;
+    renderTour();
+}
+
+function prevTourStep() {
+    if (tourStepIndex === 0) return;
+    tourStepIndex -= 1;
+    renderTour();
+}
+
+function maybeOpenTour() {
+    if (!hasSeenTour()) {
+        openTour(0);
+    }
+}
+
+function refreshTourHighlight() {
+    const overlay = document.getElementById("tour-overlay");
+    if (!overlay || overlay.classList.contains("hidden")) return;
+    renderTour();
+}
+
+function updateActionGuidance(action = currentAction) {
+    const guidance = ACTION_GUIDANCE[action] || ACTION_GUIDANCE.examine_evidence;
+    const title = document.getElementById("action-guidance-title");
+    const body = document.getElementById("action-guidance-text");
+    if (!title || !body) return;
+    title.textContent = guidance.title;
+    body.textContent = guidance.body;
+}
+
+function resetActionComposer() {
+    currentAction = "examine_evidence";
+    document.querySelectorAll(".action-type-btn").forEach(btn => btn.classList.remove("active"));
+
+    const examineButton = document.querySelector('.action-type-btn[data-action="examine_evidence"]');
+    if (examineButton) {
+        examineButton.classList.add("active");
+    }
+
+    document.getElementById("verdict-section").classList.add("hidden");
+    document.getElementById("inp-target").value = "";
+    document.getElementById("inp-reasoning").value = "";
+    document.getElementById("inp-verdict-reasoning").value = "";
+    updateActionGuidance();
+}
 
 // ─── SPLASH → GAME ─────────────────────────────────────────
 async function startCase(level) {
@@ -25,10 +197,11 @@ async function startCase(level) {
         gameSessionId = data.session_id || null;
         gameState = data.observation || data;
         isDone = false;
-
-        renderGame();
+        resetActionComposer();
         document.getElementById("splash").classList.add("hidden");
         document.getElementById("game").classList.remove("hidden");
+        renderGame();
+        maybeOpenTour();
     } catch (err) {
         alert("Could not connect to the environment server. Make sure it's running!");
         console.error(err);
@@ -39,10 +212,12 @@ async function startCase(level) {
 }
 
 function backToSplash() {
+    closeTour();
     document.getElementById("game").classList.add("hidden");
     document.getElementById("splash").classList.remove("hidden");
-    document.getElementById("log-entries").innerHTML = "";
+    document.getElementById("log-entries").innerHTML = '<div class="log-empty">Your hearing history will appear here after the first action.</div>';
     isDone = false;
+    gameState = null;
     gameSessionId = null;
 }
 
@@ -97,22 +272,35 @@ function renderGame() {
 
     // Manipulation signals
     const manipList = document.getElementById("manip-list");
+    const manipSignals = obs.manipulative_signals || [];
     manipList.innerHTML = "";
-    (obs.manipulative_signals || []).forEach(s => {
+    manipSignals.forEach(s => {
         const div = document.createElement("div");
         div.className = "manip-item";
         div.textContent = "⚠️ " + s;
         manipList.appendChild(div);
     });
+    if (!manipSignals.length) {
+        const div = document.createElement("div");
+        div.className = "manip-item";
+        div.textContent = "No obvious manipulation signal yet. Keep testing both sides.";
+        manipList.appendChild(div);
+    }
 
     // Feedback
+    const feedbackBox = document.getElementById("feedback-box");
     if (obs.feedback) {
-        document.getElementById("feedback-box").classList.remove("hidden");
+        feedbackBox.classList.remove("hidden");
         document.getElementById("feedback-text").textContent = obs.feedback;
+    } else {
+        feedbackBox.classList.add("hidden");
+        document.getElementById("feedback-text").textContent = "";
     }
 
     // Sliders
     buildSliders(obs.evidence_items || []);
+    updateActionGuidance();
+    refreshTourHighlight();
 }
 
 function buildSliders(evidenceItems) {
@@ -144,6 +332,7 @@ function selectAction(btn) {
     } else {
         verdictSection.classList.add("hidden");
     }
+    updateActionGuidance();
 }
 
 // ─── SUBMIT ACTION ──────────────────────────────────────────
@@ -216,6 +405,10 @@ async function submitAction() {
 // ─── LOG ENTRY ──────────────────────────────────────────────
 function addLogEntry(step, action, reward) {
     const container = document.getElementById("log-entries");
+    const placeholder = container.querySelector(".log-empty");
+    if (placeholder) {
+        placeholder.remove();
+    }
     const icons = {
         examine_evidence: "🔍",
         question_plaintiff: "❓🔵",
@@ -257,3 +450,16 @@ function showGavelOverlay(obs) {
         overlay.classList.add("hidden");
     };
 }
+
+document.addEventListener("keydown", (event) => {
+    const overlay = document.getElementById("tour-overlay");
+    if (!overlay || overlay.classList.contains("hidden")) return;
+
+    if (event.key === "Escape") {
+        closeTour();
+    } else if (event.key === "ArrowRight") {
+        nextTourStep();
+    } else if (event.key === "ArrowLeft") {
+        prevTourStep();
+    }
+});

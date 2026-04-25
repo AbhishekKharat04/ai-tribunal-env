@@ -16,6 +16,24 @@
             <div class="gavel-icon">⚖️</div>
             <h1 class="splash-title">AI TRIBUNAL</h1>
             <p class="splash-sub">An Adversarial Legal Reasoning Environment</p>
+            <p class="splash-note">No local setup is needed for judges. Start with the easy case, inspect suspicious evidence, and rule only after you have tested both sides.</p>
+            <div class="splash-guide">
+                <div class="splash-guide-card">
+                    <span class="guide-step">1</span>
+                    <strong>Read the dispute</strong>
+                    <p>Compare the plaintiff and defendant stories before trusting either side.</p>
+                </div>
+                <div class="splash-guide-card">
+                    <span class="guide-step">2</span>
+                    <strong>Probe the evidence</strong>
+                    <p>Click evidence cards, rate reliability, and watch the manipulation alerts.</p>
+                </div>
+                <div class="splash-guide-card">
+                    <span class="guide-step">3</span>
+                    <strong>Deliver a ruling</strong>
+                    <p>Use RULE only when your reasoning is clear enough to defend in writing.</p>
+                </div>
+            </div>
             <div class="case-select-grid">
                 <button class="case-btn" data-level="1" onclick="startCase(1)">
                     <span class="case-difficulty easy">EASY</span>
@@ -36,6 +54,7 @@
                     <span class="case-steps">25 Steps</span>
                 </button>
             </div>
+            <p class="splash-hint">The in-app guided tour opens automatically on your first case. You can reopen it any time with the help button inside the courtroom.</p>
             <p class="splash-footer">Built for Meta PyTorch OpenEnv Hackathon 2026</p>
         </div>
     </div>
@@ -63,6 +82,7 @@
                 </div>
             </div>
             <div class="hud-right">
+                <button id="btn-help" class="btn-icon btn-help" onclick="openTour()" title="Open guided tour">?</button>
                 <button id="btn-back" class="btn-icon" onclick="backToSplash()" title="Back to menu">✕</button>
             </div>
         </header>
@@ -102,6 +122,21 @@
 
             <!-- RIGHT: Action Panel -->
             <section class="action-panel">
+                <div class="judge-playbook">
+                    <div class="judge-playbook-header">
+                        <span class="judge-playbook-kicker">Judge Playbook</span>
+                        <span class="judge-playbook-status">Review, challenge, then rule</span>
+                    </div>
+                    <div class="judge-playbook-steps">
+                        <div class="judge-playbook-step"><span>1</span> Read both sides</div>
+                        <div class="judge-playbook-step"><span>2</span> Stress-test suspicious evidence</div>
+                        <div class="judge-playbook-step"><span>3</span> Rule only when the contradiction is clear</div>
+                    </div>
+                </div>
+                <div id="action-guidance" class="action-guidance">
+                    <h4 id="action-guidance-title">Start with Examine</h4>
+                    <p id="action-guidance-text">Click an evidence card to auto-fill the target box, then explain why that item looks reliable or suspicious.</p>
+                </div>
                 <h3 class="section-heading">🎯 YOUR ACTION</h3>
 
                 <div class="action-buttons">
@@ -153,7 +188,9 @@
 
         <!-- ACTION LOG -->
         <div id="action-log" class="action-log">
-            <div id="log-entries"></div>
+            <div id="log-entries">
+                <div class="log-empty">Your hearing history will appear here after the first action.</div>
+            </div>
         </div>
 
         <!-- GAVEL ANIMATION OVERLAY -->
@@ -163,6 +200,22 @@
             <div id="final-score-display" class="final-score-display"></div>
         </div>
     </div>
+
+        <div id="tour-overlay" class="tour-overlay hidden" aria-modal="true" role="dialog" aria-labelledby="tour-title">
+            <div class="tour-card">
+                <div class="tour-progress" id="tour-progress">Step 1 of 5</div>
+                <h3 id="tour-title">Welcome to the bench</h3>
+                <p id="tour-body">This quick tour shows where to read the case, how to inspect evidence, and when to rule.</p>
+                <div id="tour-tip" class="tour-tip">Tip: start with the easy case if this is your first run.</div>
+                <div class="tour-actions">
+                    <button class="tour-btn tour-btn-secondary" onclick="closeTour()">Skip</button>
+                    <div class="tour-actions-right">
+                        <button id="tour-prev" class="tour-btn tour-btn-secondary" onclick="prevTourStep()">Back</button>
+                        <button id="tour-next" class="tour-btn tour-btn-primary" onclick="nextTourStep()">Next</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     <script src="/static/game.js"></script>
 </body>

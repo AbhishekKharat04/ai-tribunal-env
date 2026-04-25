@@ -474,6 +474,10 @@ body {
     gap: 12px;
 }
 
+.action-panel > .section-heading {
+    order: -3;
+}
+
 .action-buttons {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -705,6 +709,272 @@ select.game-input { cursor: pointer; }
     animation: fadeUp 0.8s ease 0.6s both;
 }
 
+.splash-note {
+    max-width: 860px;
+    margin: 0 auto 24px;
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+
+.splash-guide {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    max-width: 980px;
+    margin: 0 auto 28px;
+}
+
+.splash-guide-card {
+    background: rgba(18,18,31,0.92);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 18px;
+    text-align: left;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+}
+
+.splash-guide-card strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+    color: var(--text);
+}
+
+.splash-guide-card p {
+    color: var(--text-dim);
+    font-size: 0.82rem;
+    line-height: 1.55;
+}
+
+.guide-step {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    margin-bottom: 12px;
+    border-radius: 999px;
+    background: rgba(255,215,0,0.12);
+    border: 1px solid rgba(255,215,0,0.35);
+    color: var(--gold);
+    font-weight: 700;
+}
+
+.splash-hint {
+    margin-top: 22px;
+    color: var(--accent-glow);
+    font-size: 0.85rem;
+}
+
+.hud-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-help {
+    border-color: rgba(255,215,0,0.28);
+    color: var(--gold);
+}
+
+.btn-help:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    box-shadow: 0 0 0 1px rgba(255,215,0,0.15);
+}
+
+.judge-playbook {
+    background: linear-gradient(180deg, rgba(255,215,0,0.08), rgba(255,215,0,0.03));
+    border: 1px solid rgba(255,215,0,0.18);
+    border-radius: 14px;
+    padding: 14px;
+    order: -2;
+}
+
+.judge-playbook-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.judge-playbook-kicker {
+    font-size: 0.72rem;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 700;
+}
+
+.judge-playbook-status {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+}
+
+.judge-playbook-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.judge-playbook-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text);
+    font-size: 0.82rem;
+}
+
+.judge-playbook-step span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: rgba(255,215,0,0.14);
+    color: var(--gold);
+    font-weight: 700;
+    font-size: 0.72rem;
+}
+
+.action-guidance {
+    background: rgba(108,92,231,0.12);
+    border: 1px solid rgba(108,92,231,0.22);
+    border-radius: 12px;
+    padding: 14px;
+    order: -1;
+}
+
+.action-guidance h4 {
+    font-size: 0.86rem;
+    color: var(--text);
+    margin-bottom: 6px;
+}
+
+.action-guidance p {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+.log-empty {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    min-width: 280px;
+    padding: 10px 12px;
+    border: 1px dashed rgba(255,255,255,0.08);
+    border-radius: 10px;
+    background: rgba(18,18,31,0.68);
+}
+
+.tour-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 5, 12, 0.74);
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding: 24px;
+    z-index: 900;
+}
+
+.tour-card {
+    width: min(420px, 100%);
+    background: linear-gradient(180deg, rgba(24,24,38,0.98), rgba(12,12,22,0.98));
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+    animation: fadeUp 0.25s ease-out;
+}
+
+.tour-progress {
+    color: var(--gold);
+    font-size: 0.72rem;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.tour-card h3 {
+    font-family: var(--font-display);
+    color: var(--text);
+    font-size: 1.35rem;
+    margin-bottom: 10px;
+}
+
+.tour-card p {
+    color: var(--text-dim);
+    line-height: 1.65;
+    font-size: 0.92rem;
+}
+
+.tour-tip {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(255,215,0,0.08);
+    border: 1px solid rgba(255,215,0,0.14);
+    color: var(--text);
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+.tour-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.tour-actions-right {
+    display: flex;
+    gap: 8px;
+}
+
+.tour-btn {
+    border: none;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.tour-btn:hover {
+    transform: translateY(-1px);
+}
+
+.tour-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.tour-btn-primary {
+    background: linear-gradient(135deg, var(--accent), #5a4bd1);
+    color: white;
+    box-shadow: 0 10px 24px rgba(108,92,231,0.28);
+}
+
+.tour-btn-secondary {
+    background: rgba(255,255,255,0.05);
+    color: var(--text);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.tour-focus {
+    position: relative;
+    z-index: 910;
+    border-radius: 16px;
+    box-shadow: 0 0 0 2px rgba(255,215,0,0.65), 0 0 28px rgba(255,215,0,0.18);
+}
+
 /* ─── RESPONSIVE ─────────────────────────────────────────── */
 @media (max-width: 1024px) {
     .court {
@@ -712,4 +982,42 @@ select.game-input { cursor: pointer; }
     }
     .splash-title { font-size: 2.5rem; }
     .case-select-grid { flex-direction: column; align-items: center; }
+    .splash-guide { grid-template-columns: 1fr; }
+    .tour-overlay {
+        justify-content: stretch;
+        padding: 16px;
+    }
+    .tour-card {
+        width: 100%;
+    }
+    .judge-playbook-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 640px) {
+    .hud {
+        padding: 10px 14px;
+    }
+    .hud-center {
+        gap: 16px;
+    }
+    .stat-value {
+        font-size: 1.05rem;
+    }
+    .splash-note,
+    .splash-hint {
+        padding: 0 12px;
+    }
+    .tour-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .tour-actions-right {
+        width: 100%;
+    }
+    .tour-actions-right .tour-btn {
+        flex: 1;
+    }
 }
