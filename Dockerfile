@@ -7,7 +7,7 @@ ENV PATH="/home/user/.local/bin:$PATH"
 WORKDIR /app
 
 COPY --chown=user server/requirements.txt requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt gradio
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=user . /app
 
@@ -16,5 +16,4 @@ ENV TASK_LEVEL=1
 
 EXPOSE 7860
 
-# Mount FastAPI at /api, Gradio as main UI
-CMD ["python", "gradio_ui.py"]
+CMD ["uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "7860"]

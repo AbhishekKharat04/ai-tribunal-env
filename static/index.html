@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Tribunal — Judge the Case</title>
+    <meta name="description" content="An RL environment where AI agents learn to judge adversarial legal cases">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- SPLASH SCREEN -->
+    <div id="splash" class="splash">
+        <div class="splash-content">
+            <div class="gavel-icon">⚖️</div>
+            <h1 class="splash-title">AI TRIBUNAL</h1>
+            <p class="splash-sub">An Adversarial Legal Reasoning Environment</p>
+            <div class="case-select-grid">
+                <button class="case-btn" data-level="1" onclick="startCase(1)">
+                    <span class="case-difficulty easy">EASY</span>
+                    <span class="case-name">Sharma vs MegaMart</span>
+                    <span class="case-type">Consumer Dispute</span>
+                    <span class="case-steps">8 Steps</span>
+                </button>
+                <button class="case-btn" data-level="2" onclick="startCase(2)">
+                    <span class="case-difficulty medium">MEDIUM</span>
+                    <span class="case-name">Iyer vs TechSoft</span>
+                    <span class="case-type">Employment Dispute</span>
+                    <span class="case-steps">15 Steps</span>
+                </button>
+                <button class="case-btn" data-level="3" onclick="startCase(3)">
+                    <span class="case-difficulty hard">HARD</span>
+                    <span class="case-name">Lakshmi Devi vs Sunrise</span>
+                    <span class="case-type">Property Fraud</span>
+                    <span class="case-steps">25 Steps</span>
+                </button>
+            </div>
+            <p class="splash-footer">Built for Meta PyTorch OpenEnv Hackathon 2026</p>
+        </div>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="game" class="game hidden">
+        <!-- TOP HUD -->
+        <header class="hud">
+            <div class="hud-left">
+                <span class="hud-icon">⚖️</span>
+                <span id="hud-title" class="hud-title">AI TRIBUNAL</span>
+            </div>
+            <div class="hud-center">
+                <div class="hud-stat">
+                    <span class="stat-label">STEP</span>
+                    <span id="hud-step" class="stat-value">0/8</span>
+                </div>
+                <div class="hud-stat">
+                    <span class="stat-label">SCORE</span>
+                    <span id="hud-score" class="stat-value score-glow">0.000</span>
+                </div>
+                <div class="hud-stat">
+                    <span class="stat-label">CONSISTENCY</span>
+                    <span id="hud-consistency" class="stat-value">1.00</span>
+                </div>
+            </div>
+            <div class="hud-right">
+                <button id="btn-back" class="btn-icon" onclick="backToSplash()" title="Back to menu">✕</button>
+            </div>
+        </header>
+
+        <!-- MAIN AREA -->
+        <main class="court">
+            <!-- LEFT: Parties -->
+            <section class="parties-panel">
+                <div class="party-card plaintiff" id="plaintiff-card">
+                    <div class="party-badge">🔵 PLAINTIFF</div>
+                    <h3 id="plaintiff-name">—</h3>
+                    <p id="plaintiff-statement" class="party-statement">—</p>
+                </div>
+                <div class="party-card defendant" id="defendant-card">
+                    <div class="party-badge">🔴 DEFENDANT</div>
+                    <h3 id="defendant-name">—</h3>
+                    <p id="defendant-statement" class="party-statement">—</p>
+                </div>
+                <!-- Manipulation Alerts -->
+                <div id="manip-panel" class="manip-panel">
+                    <h4>⚠️ Manipulation Signals</h4>
+                    <div id="manip-list"></div>
+                </div>
+            </section>
+
+            <!-- CENTER: Evidence Board -->
+            <section class="evidence-board">
+                <h3 class="section-heading">📋 EVIDENCE BOARD</h3>
+                <div id="evidence-grid" class="evidence-grid"></div>
+
+                <!-- Feedback area -->
+                <div id="feedback-box" class="feedback-box hidden">
+                    <h4>📜 Court Record</h4>
+                    <p id="feedback-text"></p>
+                </div>
+            </section>
+
+            <!-- RIGHT: Action Panel -->
+            <section class="action-panel">
+                <h3 class="section-heading">🎯 YOUR ACTION</h3>
+
+                <div class="action-buttons">
+                    <button class="action-type-btn active" data-action="examine_evidence" onclick="selectAction(this)">🔍 Examine</button>
+                    <button class="action-type-btn" data-action="question_plaintiff" onclick="selectAction(this)">❓ Ask Plaintiff</button>
+                    <button class="action-type-btn" data-action="question_defendant" onclick="selectAction(this)">❓ Ask Defendant</button>
+                    <button class="action-type-btn rule-btn" data-action="rule" onclick="selectAction(this)">⚖️ RULE</button>
+                </div>
+
+                <div class="form-group">
+                    <label>Target Evidence</label>
+                    <input type="text" id="inp-target" placeholder="E1, E3..." class="game-input">
+                </div>
+
+                <div class="form-group">
+                    <label>Your Reasoning</label>
+                    <textarea id="inp-reasoning" rows="3" placeholder="Why are you taking this action?" class="game-input"></textarea>
+                </div>
+
+                <!-- Verdict section (hidden until RULE) -->
+                <div id="verdict-section" class="verdict-section hidden">
+                    <div class="form-group">
+                        <label>Verdict</label>
+                        <select id="inp-verdict" class="game-input">
+                            <option value="plaintiff_wins">Plaintiff Wins</option>
+                            <option value="defendant_wins">Defendant Wins</option>
+                            <option value="partial_plaintiff">Partial — Plaintiff</option>
+                            <option value="partial_defendant">Partial — Defendant</option>
+                            <option value="dismissed">Dismissed</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Judgment</label>
+                        <textarea id="inp-verdict-reasoning" rows="3" placeholder="Full written judgment..." class="game-input"></textarea>
+                    </div>
+                </div>
+
+                <!-- Evidence Reliability Sliders -->
+                <details class="reliability-section">
+                    <summary>📊 Rate Evidence Reliability</summary>
+                    <div id="slider-container"></div>
+                </details>
+
+                <button id="btn-submit" class="btn-submit" onclick="submitAction()">
+                    ⚡ SUBMIT ACTION
+                </button>
+            </section>
+        </main>
+
+        <!-- ACTION LOG -->
+        <div id="action-log" class="action-log">
+            <div id="log-entries"></div>
+        </div>
+
+        <!-- GAVEL ANIMATION OVERLAY -->
+        <div id="gavel-overlay" class="gavel-overlay hidden">
+            <div class="gavel-anim">⚖️</div>
+            <div id="gavel-text" class="gavel-text">VERDICT DELIVERED</div>
+            <div id="final-score-display" class="final-score-display"></div>
+        </div>
+    </div>
+
+    <script src="/static/game.js"></script>
+</body>
+</html>
