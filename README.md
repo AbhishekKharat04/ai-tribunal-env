@@ -18,7 +18,7 @@ tags:
 ## 📌 Submission Links
 - **Hugging Face Space:** [https://huggingface.co/spaces/AbhishekKharat11/ai-tribunal-env](https://huggingface.co/spaces/AbhishekKharat11/ai-tribunal-env)
 - **GitHub Repository:** [https://github.com/AbhishekKharat04/ai-tribunal-env](https://github.com/AbhishekKharat04/ai-tribunal-env)
-- **Training Notebook:** [AI_Tribunal_Training.ipynb](AI_Tribunal_Training.ipynb) (Included in repo)
+- **Training Notebook:** [AI Tribunal — GRPO Training (Kaggle)](https://www.kaggle.com/code/abhishekkharat04/ai-tribunal-grpo-training)
 - **Blog Post:** [blog.md](blog.md) (Included in repo)
 
 > **An RL training environment where AI agents learn to judge adversarial legal cases — detecting fabricated evidence, resisting manipulation, and maintaining consistent jurisprudence across episodes.**
