@@ -15,7 +15,7 @@ async function startCase(level) {
     btn.style.opacity = "0.7";
 
     try {
-        const res = await fetch(`${BASE}/reset`, {
+        const res = await fetch(`${BASE}/game/reset`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ task_level: level }),
@@ -175,7 +175,7 @@ async function submitAction() {
     }
 
     try {
-        const res = await fetch(`${BASE}/step`, {
+        const res = await fetch(`${BASE}/game/step`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ action: action }),

@@ -49,6 +49,47 @@ def root():
     }
 
 
+# ── Stateful Game Endpoints (for the web UI) ─────────────────
+# OpenEnv's /step creates a new env per request (stateless).
+# The game UI needs state, so we maintain a global instance.
+_game_env: Optional[TribunalEnvironment] = None
+
+
+class GameResetRequest(BaseModel):
+    task_level: int = 1
+
+
+class GameStepRequest(BaseModel):
+    action: Dict
+
+
+@app.post("/game/reset")
+def game_reset(req: GameResetRequest):
+    global _game_env
+    level = max(1, min(3, req.task_level))
+    _game_env = TribunalEnvironment(task_level=level)
+    obs = _game_env.reset()
+    return JSONResponse({"observation": obs.model_dump()})
+
+
+@app.post("/game/step")
+def game_step(req: GameStepRequest):
+    global _game_env
+    if _game_env is None:
+        return JSONResponse({"error": "No active game. Call /game/reset first."}, status_code=400)
+    try:
+        action = TribunalAction(**req.action)
+        obs, reward, done, info = _game_env.step(action)
+        return JSONResponse({
+            "observation": obs.model_dump(),
+            "reward": reward,
+            "done": done,
+            "info": info,
+        })
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
 @app.get("/tasks")
 def get_tasks():
     tasks = []
