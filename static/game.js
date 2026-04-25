@@ -1,12 +1,13 @@
 /* ═══════════════════════════════════════════════════════════
    AI TRIBUNAL — Game Logic
-   Connects to FastAPI backend at /reset, /step
+   Connects to the session-aware FastAPI game endpoints
    ═══════════════════════════════════════════════════════════ */
 
 const BASE = window.location.origin;
 let currentAction = "examine_evidence";
 let gameState = null;
 let isDone = false;
+let gameSessionId = null;
 
 // ─── SPLASH → GAME ─────────────────────────────────────────
 async function startCase(level) {
@@ -21,6 +22,7 @@ async function startCase(level) {
             body: JSON.stringify({ task_level: level }),
         });
         const data = await res.json();
+        gameSessionId = data.session_id || null;
         gameState = data.observation || data;
         isDone = false;
 
@@ -41,6 +43,7 @@ function backToSplash() {
     document.getElementById("splash").classList.remove("hidden");
     document.getElementById("log-entries").innerHTML = "";
     isDone = false;
+    gameSessionId = null;
 }
 
 // ─── RENDER GAME STATE ──────────────────────────────────────
@@ -145,7 +148,7 @@ function selectAction(btn) {
 
 // ─── SUBMIT ACTION ──────────────────────────────────────────
 async function submitAction() {
-    if (isDone) return;
+    if (isDone || !gameSessionId) return;
 
     const submitBtn = document.getElementById("btn-submit");
     submitBtn.disabled = true;
@@ -178,7 +181,7 @@ async function submitAction() {
         const res = await fetch(`${BASE}/game/step`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: action }),
+            body: JSON.stringify({ session_id: gameSessionId, action: action }),
         });
         const data = await res.json();
 

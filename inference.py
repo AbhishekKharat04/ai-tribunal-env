@@ -72,8 +72,12 @@ def run_task(client, task):
     print(f"[START] task={name} env={BENCHMARK} model={MODEL_NAME}", flush=True)
 
     try:
-        r = requests.post(f"{ENV_URL}/game/reset", json={"task_level": level}, timeout=30)
+        payload = {"task_level": level, "continue_session": level > 1}
+        if hasattr(run_task, "_session_id") and run_task._session_id:
+            payload["session_id"] = run_task._session_id
+        r = requests.post(f"{ENV_URL}/game/reset", json=payload, timeout=30)
         obs = r.json().get("observation", r.json())
+        run_task._session_id = r.json().get("session_id", getattr(run_task, "_session_id", None))
         done = r.json().get("done", False)
 
         for step in range(1, max_steps + 1):
@@ -83,7 +87,11 @@ def run_task(client, task):
             action_str = f"{action['action_type']}:{action.get('verdict') or action.get('target','')}"
 
             try:
-                sr = requests.post(f"{ENV_URL}/game/step", json={"action": action}, timeout=30)
+                sr = requests.post(
+                    f"{ENV_URL}/game/step",
+                    json={"session_id": run_task._session_id, "action": action},
+                    timeout=30,
+                )
                 if sr.status_code == 200:
                     res = sr.json()
                     obs = res.get("observation", res)
@@ -119,6 +127,7 @@ def run_task(client, task):
 
 def main():
     client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
+    run_task._session_id = None
     for task in TASKS:
         run_task(client, task)
 

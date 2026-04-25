@@ -81,38 +81,82 @@ After training the 1.5B parameter Qwen2.5 model using GRPO (with the custom trai
 
 The model demonstrated a clear ability to detect fabricated evidence and align its rulings with established precedents.
 
+![Training reward curve](reward_curve.png)
+*Reward improves over training episodes with the trained policy interacting against the live environment.*
+
+![Task score curves](task_scores.png)
+*Task-level evaluation of the trained model across all three benchmark tasks.*
+
 ---
 
 ## 🚀 Quick Start
 
 ```python
 import requests
+import uuid
 
 BASE = "https://abhishekkharat11-ai-tribunal-env.hf.space"
+session_id = f"demo-{uuid.uuid4()}"
 
-# Start a case
-obs = requests.post(f"{BASE}/reset", json={}).json()["observation"]
+# Start a case using the standard OpenEnv HTTP API.
+# Because HTTP requests are stateless, pass session + episode IDs back into /step.
+reset = requests.post(
+    f"{BASE}/reset",
+    json={"task_level": 2, "session_id": session_id},
+).json()
+obs = reset["observation"]
+episode_id = obs["episode_id"]
 print(obs["case_title"])
 
 # Take an action
-result = requests.post(f"{BASE}/step", json={"action": {
-    "action_type": "examine_evidence",
-    "reasoning": "I will examine evidence E3 which has suspicious timing relative to the HR complaint...",
-    "target": "E3",
-    "evidence_reliability_assessments": {"E3": 0.2}
-}}).json()
+result = requests.post(
+    f"{BASE}/step",
+    json={
+        "session_id": session_id,
+        "episode_id": episode_id,
+        "task_level": 2,
+        "action": {
+            "action_type": "examine_evidence",
+            "reasoning": "I will examine evidence E3 because its timing and metadata are suspicious relative to the HR complaint and the sudden performance narrative...",
+            "target": "E3",
+            "evidence_reliability_assessments": {"E3": 0.2}
+        }
+    }
+).json()
 
 # Issue a ruling
-result = requests.post(f"{BASE}/step", json={"action": {
-    "action_type": "rule",
-    "reasoning": "Based on examination, the fabricated evidence and procedural violations...",
-    "verdict": "plaintiff_wins",
-    "verdict_reasoning": "The defendant's performance log was created retroactively...",
-    "evidence_reliability_assessments": {"E3": 0.15, "E6": 0.25}
-}}).json()
+result = requests.post(
+    f"{BASE}/step",
+    json={
+        "session_id": session_id,
+        "episode_id": episode_id,
+        "task_level": 2,
+        "action": {
+            "action_type": "rule",
+            "reasoning": "Based on examination, the fabricated evidence and procedural violations outweigh the defendant's unsupported narrative...",
+            "verdict": "plaintiff_wins",
+            "verdict_reasoning": "The defendant's performance log was created retroactively, the panel was not independent, and the mandatory PIP requirement was ignored...",
+            "evidence_reliability_assessments": {"E3": 0.15, "E6": 0.25}
+        }
+    }
+).json()
 
 print(f"Score: {result['observation']['step_score']}")
 ```
+
+For the browser demo, use the custom game UI at `/` which manages a session automatically through `/game/reset` and `/game/step`.
+
+---
+
+## Agent Access
+
+The Space now exposes a lightweight agent wrapper at [`/agents.md`](https://abhishekkharat11-ai-tribunal-env.hf.space/agents.md) so external coding agents can discover the API quickly.
+
+- Use `/game/reset` + `/game/step` for the simplest tool-style integration.
+- Use `/reset` + `/step` if you want the standard OpenEnv HTTP contract.
+- Reuse the same `session_id` across related cases when you want precedent consistency to carry forward.
+
+**About the Hugging Face “Agents” button:** Hugging Face’s current documentation says that header integration is auto-exposed for compatible **Gradio** Spaces. This project is a **Docker Space**, so not having that button does **not** make the submission incomplete. The manual `/agents.md` wrapper keeps the Space agent-friendly even without the built-in Gradio header integration.
 
 ---
 
@@ -128,12 +172,15 @@ print(f"Score: {result['observation']['step_score']}")
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/reset` | POST | Start new case |
-| `/step` | POST | Take action |
+| `/reset` | POST | Start a standard OpenEnv session; returns `session_id` and `episode_id` in the observation |
+| `/step` | POST | Take an action in a stateless HTTP call by passing `session_id` + `episode_id` back |
 | `/state` | GET | Current state |
 | `/tasks` | GET | All 3 tasks + action schema |
 | `/grader` | POST | Grade an action |
 | `/baseline` | GET | Run baseline agent |
+| `/game/reset` | POST | Start a browser/game session |
+| `/game/step` | POST | Continue a browser/game session |
+| `/agents.md` | GET | Plain-text wrapper for external coding agents and tool discovery |
 | `/health` | GET | Health check |
 | `/docs` | GET | Swagger UI |
 

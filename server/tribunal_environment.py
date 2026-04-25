@@ -3,8 +3,9 @@ AI Tribunal Environment — Core Environment
 """
 from __future__ import annotations
 import copy, sys, os
+from threading import RLock
 from uuid import uuid4
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -23,12 +24,15 @@ class TribunalEnvironment(Environment):
     Key mechanic: Precedent Consistency Engine penalises
     agents that rule inconsistently on similar cases.
 
-    The precedent engine is shared across all instances so that
-    rulings from earlier cases influence scoring of later ones.
+    Precedent state is scoped to a logical session so that
+    rulings from earlier cases influence later ones in the same run
+    without leaking across unrelated users or benchmarks.
     """
 
-    # Class-level precedent engine: survives across episodes/instances
-    _shared_precedent_engine = PrecedentEngine()
+    # Process-local stores used to reconstruct state for stateless HTTP requests.
+    _store_lock = RLock()
+    _session_precedents: Dict[str, PrecedentEngine] = {}
+    _episode_snapshots: Dict[str, Dict[str, Any]] = {}
 
     def __init__(self, task_level: int = 1):
         self._task_level = max(1, min(3, task_level))
@@ -40,32 +44,108 @@ class TribunalEnvironment(Environment):
         self._history: List[Dict] = []
         self._verdicts_issued = 0
         self._manipulation_resisted = 0
-        self._precedent_engine = TribunalEnvironment._shared_precedent_engine
+        self._session_id = ""
+        self._precedent_engine = PrecedentEngine()
 
-    def reset(self, task_level: Optional[int] = None) -> TribunalObservation:
-        if task_level is not None:
-            self._task_level = max(1, min(3, task_level))
+    @classmethod
+    def _get_precedent_engine(cls, session_id: str) -> PrecedentEngine:
+        with cls._store_lock:
+            engine = cls._session_precedents.get(session_id)
+            if engine is None:
+                engine = PrecedentEngine()
+                cls._session_precedents[session_id] = engine
+            return engine
 
-        self._state = State(episode_id=str(uuid4()), step_count=0)
-        self._step = 0
-        self._done = False
-        self._cumulative_score = 0.0
-        self._history = []
-        self._verdicts_issued = 0
-        self._manipulation_resisted = 0
-        # NOTE: We intentionally do NOT reset the precedent engine here.
-        # Cross-episode consistency is a key mechanic — rulings from
-        # earlier cases should influence scoring of later ones.
+    @classmethod
+    def _get_snapshot(cls, episode_id: str) -> Optional[Dict[str, Any]]:
+        with cls._store_lock:
+            snapshot = cls._episode_snapshots.get(episode_id)
+            return copy.deepcopy(snapshot) if snapshot is not None else None
 
+    @classmethod
+    def _put_snapshot(cls, episode_id: str, snapshot: Dict[str, Any]) -> None:
+        with cls._store_lock:
+            cls._episode_snapshots[episode_id] = copy.deepcopy(snapshot)
+
+    @classmethod
+    def _drop_snapshot(cls, episode_id: str) -> None:
+        with cls._store_lock:
+            cls._episode_snapshots.pop(episode_id, None)
+
+    @classmethod
+    def reset_session(cls, session_id: str) -> None:
+        with cls._store_lock:
+            cls._session_precedents.pop(session_id, None)
+            to_delete = [
+                episode_id
+                for episode_id, snapshot in cls._episode_snapshots.items()
+                if snapshot.get("session_id") == session_id
+            ]
+            for episode_id in to_delete:
+                cls._episode_snapshots.pop(episode_id, None)
+
+    def _persist_snapshot(self) -> None:
+        episode_id = self._state.episode_id or ""
+        if not episode_id:
+            return
+        snapshot = {
+            "session_id": self._session_id,
+            "task_level": self._task_level,
+            "step": self._step,
+            "done": self._done,
+            "cumulative_score": self._cumulative_score,
+            "history": copy.deepcopy(self._history),
+            "verdicts_issued": self._verdicts_issued,
+            "manipulation_resisted": self._manipulation_resisted,
+            "step_count": self._state.step_count,
+        }
+        self._put_snapshot(episode_id, snapshot)
+
+    def _hydrate_from_snapshot(
+        self,
+        episode_id: Optional[str],
+        session_id: Optional[str],
+        task_level: Optional[int],
+    ) -> bool:
+        if not episode_id:
+            return False
+
+        snapshot = self._get_snapshot(episode_id)
+        if snapshot is None:
+            return False
+
+        self._session_id = session_id or snapshot["session_id"]
+        self._task_level = max(1, min(3, int(task_level or snapshot["task_level"])))
+        self._precedent_engine = self._get_precedent_engine(self._session_id)
+        self._state = State(
+            episode_id=episode_id,
+            step_count=int(snapshot["step_count"]),
+        )
+        self._step = int(snapshot["step"])
+        self._done = bool(snapshot["done"])
+        self._cumulative_score = float(snapshot["cumulative_score"])
+        self._history = copy.deepcopy(snapshot["history"])
+        self._verdicts_issued = int(snapshot["verdicts_issued"])
+        self._manipulation_resisted = int(snapshot["manipulation_resisted"])
         self._case = CASES[self._task_level - 1]
+        return True
 
+    def _build_observation(
+        self,
+        reward: float,
+        step_score: float,
+        final_score: Optional[float],
+        feedback: str,
+        precedents: List[Dict[str, Any]],
+    ) -> TribunalObservation:
         evidence_for_obs = [
             {k: v for k, v in e.items() if k != "truth_value" and k != "notes"}
             for e in self._case["evidence"]
         ]
-
         return TribunalObservation(
-            case_id=self._state.episode_id[:8],
+            case_id=(self._state.episode_id or "")[:8],
+            episode_id=self._state.episode_id or "",
+            session_id=self._session_id,
             case_title=self._case["title"],
             case_type=self._case["case_type"],
             task_level=self._task_level,
@@ -76,13 +156,58 @@ class TribunalEnvironment(Environment):
             defendant_profile=self._case["defendant"]["profile"],
             evidence_items=evidence_for_obs,
             manipulative_signals=self._case["manipulation_signals"],
-            relevant_precedents=[],
-            time_step=0,
+            relevant_precedents=precedents,
+            time_step=self._step,
             max_steps=self._case["max_steps"],
-            done=False,
+            done=self._done,
+            reward=reward,
+            step_score=step_score,
+            cumulative_score=self._cumulative_score,
+            final_score=final_score,
+            feedback=feedback,
+            verdicts_issued=self._verdicts_issued,
+            consistency_score=self._precedent_engine.get_consistency_score(),
+            manipulation_resisted=self._manipulation_resisted,
+            task_description=self._case["description"],
+            metadata={
+                "session_id": self._session_id,
+                "episode_id": self._state.episode_id,
+            },
+        )
+
+    def reset(
+        self,
+        seed: Optional[int] = None,
+        episode_id: Optional[str] = None,
+        task_level: Optional[int] = None,
+        session_id: Optional[str] = None,
+        **kwargs: Any,
+    ) -> TribunalObservation:
+        if task_level is not None:
+            self._task_level = max(1, min(3, task_level))
+        elif kwargs.get("task_level") is not None:
+            self._task_level = max(1, min(3, int(kwargs["task_level"])))
+
+        self._session_id = (
+            session_id
+            or kwargs.get("session_id")
+            or str(uuid4())
+        )
+        self._precedent_engine = self._get_precedent_engine(self._session_id)
+        resolved_episode_id = episode_id or kwargs.get("episode_id") or str(uuid4())
+        self._state = State(episode_id=resolved_episode_id, step_count=0)
+        self._step = 0
+        self._done = False
+        self._cumulative_score = 0.0
+        self._history = []
+        self._verdicts_issued = 0
+        self._manipulation_resisted = 0
+
+        self._case = CASES[self._task_level - 1]
+        self._persist_snapshot()
+        return self._build_observation(
             reward=0.0,
             step_score=0.0,
-            cumulative_score=0.0,
             final_score=None,
             feedback=(
                 f"Case opened: {self._case['title']}\n\n"
@@ -91,17 +216,36 @@ class TribunalEnvironment(Environment):
                 f"and issue a ruling. Available actions: examine_evidence, "
                 f"question_plaintiff, question_defendant, request_document, rule, adjourn."
             ),
-            verdicts_issued=0,
-            consistency_score=1.0,
-            manipulation_resisted=0,
-            task_description=self._case["description"],
+            precedents=[],
         )
 
-    def step(self, action: TribunalAction) -> Tuple[TribunalObservation, float, bool, Dict]:
-        # Auto-reset if step() is called on an uninitialised instance
-        # (OpenEnv HTTP mode creates a fresh env per request)
+    def step(
+        self,
+        action: TribunalAction,
+        timeout_s: Optional[float] = None,
+        episode_id: Optional[str] = None,
+        task_level: Optional[int] = None,
+        session_id: Optional[str] = None,
+        **kwargs: Any,
+    ) -> TribunalObservation:
+        meta = action.metadata or {}
+        resolved_episode_id = episode_id or kwargs.get("episode_id") or meta.get("episode_id")
+        resolved_session_id = session_id or kwargs.get("session_id") or meta.get("session_id")
+        resolved_task_level = task_level or kwargs.get("task_level")
+
+        # Auto-hydrate if step() is called on a fresh instance via stateless HTTP.
         if not self._case:
-            self.reset()
+            hydrated = self._hydrate_from_snapshot(
+                episode_id=resolved_episode_id,
+                session_id=resolved_session_id,
+                task_level=resolved_task_level,
+            )
+            if not hydrated:
+                self.reset(
+                    episode_id=resolved_episode_id,
+                    task_level=resolved_task_level,
+                    session_id=resolved_session_id,
+                )
 
         if self._done:
             raise RuntimeError("Episode done. Call reset().")
@@ -118,7 +262,7 @@ class TribunalEnvironment(Environment):
         precedent_fb = ""
         if verdict_issued:
             precedent_reward, precedent_fb = self._precedent_engine.add_verdict(
-                case_id=self._state.episode_id[:8],
+                case_id=(self._state.episode_id or "")[:8],
                 case_type=self._case["case_type"],
                 key_facts=self._case["key_facts"],
                 verdict=action.verdict,
@@ -169,53 +313,21 @@ class TribunalEnvironment(Environment):
                 f"{'='*50}"
             )
 
-        # Get precedents for next obs
         precedents = self._precedent_engine.get_relevant_precedents(
             self._case["case_type"],
             self._case["key_facts"],
-            exclude_case_id=self._state.episode_id[:8],
+            exclude_case_id=(self._state.episode_id or "")[:8],
         )
 
-        evidence_for_obs = [
-            {k: v for k, v in e.items() if k != "truth_value" and k != "notes"}
-            for e in self._case["evidence"]
-        ]
+        self._persist_snapshot()
 
-        obs = TribunalObservation(
-            case_id=self._state.episode_id[:8],
-            case_title=self._case["title"],
-            case_type=self._case["case_type"],
-            task_level=self._task_level,
-            task_name=self._case["name"],
-            plaintiff_statement=self._case["plaintiff"]["statement"],
-            defendant_statement=self._case["defendant"]["statement"],
-            plaintiff_profile=self._case["plaintiff"]["profile"],
-            defendant_profile=self._case["defendant"]["profile"],
-            evidence_items=evidence_for_obs,
-            manipulative_signals=self._case["manipulation_signals"],
-            relevant_precedents=precedents,
-            time_step=self._step,
-            max_steps=self._case["max_steps"],
-            done=self._done,
+        return self._build_observation(
             reward=step_score,
             step_score=step_score,
-            cumulative_score=self._cumulative_score,
             final_score=final_score,
             feedback=feedback,
-            verdicts_issued=self._verdicts_issued,
-            consistency_score=self._precedent_engine.get_consistency_score(),
-            manipulation_resisted=self._manipulation_resisted,
-            task_description=self._case["description"],
+            precedents=precedents,
         )
-
-        info = {
-            "step_score": step_score,
-            "final_score": final_score,
-            "verdict_issued": verdict_issued,
-            "episode_id": self._state.episode_id,
-        }
-
-        return obs, step_score, self._done, info
 
     @property
     def state(self) -> State:

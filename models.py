@@ -64,6 +64,8 @@ class TribunalObservation(Observation):
     """Full observation returned to the agent each step."""
     # Case basics
     case_id: str = Field(default="")
+    episode_id: str = Field(default="")
+    session_id: str = Field(default="")
     case_title: str = Field(default="")
     case_type: str = Field(default="")
     task_level: int = Field(default=1)

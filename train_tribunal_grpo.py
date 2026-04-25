@@ -57,6 +57,8 @@ class TribunalEnvClient:
 
     def __init__(self, base_url=ENV_URL):
         self.base_url = base_url.rstrip("/")
+        self.session_id = None
+        self.task_level = 1
         self.observation = None
         self.reward = 0.0
         self.done = False
@@ -70,12 +72,20 @@ class TribunalEnvClient:
         except Exception:
             return False
 
-    def reset(self):
+    def reset(self, task_level=1, continue_session=False):
         """Reset the environment for a new episode."""
+        self.task_level = task_level
         try:
-            r = requests.post(f"{self.base_url}/reset", json={}, timeout=30)
+            payload = {
+                "task_level": task_level,
+                "continue_session": continue_session,
+            }
+            if self.session_id:
+                payload["session_id"] = self.session_id
+            r = requests.post(f"{self.base_url}/game/reset", json=payload, timeout=30)
             if r.status_code == 200:
                 data = r.json()
+                self.session_id = data.get("session_id", self.session_id)
                 self.observation = data.get("observation", data)
                 self.done = False
                 self.total_reward = 0.0
@@ -90,13 +100,16 @@ class TribunalEnvClient:
         self.steps = 0
         return self.observation
 
+    def new_session(self):
+        self.session_id = None
+
     def step(self, action_dict):
         """Take a step in the environment."""
         self.steps += 1
         try:
             r = requests.post(
-                f"{self.base_url}/step",
-                json={"action": action_dict},
+                f"{self.base_url}/game/step",
+                json={"session_id": self.session_id, "action": action_dict},
                 timeout=30,
             )
             if r.status_code == 200:
@@ -360,7 +373,7 @@ def tribunal_reward_func(completions, **kwargs):
             text = completion[0]["content"] if isinstance(completion, list) else str(completion)
             action = parse_action(text, 4, 6)  # Assume mid-game
             env = TribunalEnvClient()
-            env.reset()
+            env.reset(task_level=1)
             _, reward, _ = env.step(action)
             rewards.append(float(reward))
         except Exception:
@@ -403,6 +416,7 @@ print("=" * 60)
 env = TribunalEnvClient()
 space_healthy = env.health_check()
 print(f"HF Space health: {'✅ Online' if space_healthy else '⚠️ Offline (using fallback)'}")
+env.new_session()
 
 for episode in range(1, NUM_EPISODES + 1):
     episode_start = time.time()
@@ -410,15 +424,8 @@ for episode in range(1, NUM_EPISODES + 1):
     # Cycle through all 3 tasks so training covers the full benchmark
     task_level = ((episode - 1) % 3) + 1  # 1, 2, 3, 1, 2, 3, ...
 
-    # Reset environment for this task
-    obs = env.reset()
-    # Override with correct task if the env supports it
-    try:
-        r = requests.post(f"{ENV_URL}/game/reset", json={"task_level": task_level}, timeout=15)
-        if r.status_code == 200:
-            obs = r.json().get("observation", obs)
-    except Exception:
-        pass
+    # Reset environment for this task while preserving session precedent history.
+    obs = env.reset(task_level=task_level, continue_session=(episode > 1))
 
     episode_total_reward = 0.0
     episode_step_rewards = []
@@ -512,7 +519,7 @@ for episode in range(1, NUM_EPISODES + 1):
                 optimizer.step()
                 optimizer.zero_grad()
 
-        # Take actual step in environment with best action
+        # Take actual step in the environment with the chosen action.
         obs, reward, done = env.step(best_action)
         episode_step_rewards.append(best_reward)
         episode_total_reward += best_reward
@@ -538,15 +545,14 @@ for episode in range(1, NUM_EPISODES + 1):
         eval_scores["avg_reward"].append(np.mean(all_rewards[-EVAL_EVERY:]))
 
         # Evaluate using the *trained model* on each task level
+        eval_client = TribunalEnvClient()
+        eval_client.new_session()
         for task_lvl in [1, 2, 3]:
             try:
-                # Reset env for this task
-                r = requests.post(f"{ENV_URL}/game/reset",
-                                  json={"task_level": task_lvl}, timeout=15)
-                if r.status_code == 200:
-                    eval_obs = r.json().get("observation", {})
-                else:
-                    eval_obs = env._fallback_observation()
+                eval_obs = eval_client.reset(
+                    task_level=task_lvl,
+                    continue_session=(task_lvl > 1),
+                )
 
                 # Run the model for a few steps + ruling
                 eval_reward_total = 0.0
@@ -554,15 +560,11 @@ for episode in range(1, NUM_EPISODES + 1):
                 for eval_step in range(1, 5):  # 3 examine + 1 rule
                     eval_action = generate_action(eval_obs, eval_step, 4)
                     try:
-                        sr = requests.post(f"{ENV_URL}/game/step",
-                                           json={"action": eval_action}, timeout=15)
-                        if sr.status_code == 200:
-                            sd = sr.json()
-                            eval_obs = sd.get("observation", eval_obs)
-                            eval_reward_total += float(sd.get("reward", 0))
-                            eval_steps += 1
-                            if sd.get("done", False):
-                                break
+                        eval_obs, eval_reward, eval_done = eval_client.step(eval_action)
+                        eval_reward_total += float(eval_reward)
+                        eval_steps += 1
+                        if eval_done:
+                            break
                     except Exception:
                         break
 
@@ -628,10 +630,12 @@ ax2.legend(fontsize=9)
 ax2.set_ylim(0, 1)
 
 plt.tight_layout()
+plt.savefig("reward_curve.png", dpi=150, bbox_inches="tight")
+plt.savefig("task_scores.png", dpi=150, bbox_inches="tight")
 plt.savefig("reward_curve_trained.png", dpi=150, bbox_inches="tight")
 plt.savefig("task_scores_trained.png", dpi=150, bbox_inches="tight")
 plt.show()
-print("📈 Plots saved: reward_curve_trained.png, task_scores_trained.png")
+print("📈 Plots saved: reward_curve.png, task_scores.png, reward_curve_trained.png, task_scores_trained.png")
 
 
 # ============================================================

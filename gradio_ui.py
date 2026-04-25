@@ -114,7 +114,9 @@ def take_action(action_type, target, reasoning, verdict, verdict_reasoning,
         evidence_reliability_assessments=assessments,
     )
 
-    obs, reward, done, info = ENV.step(action)
+    obs = ENV.step(action)
+    reward = float(obs.reward or 0.0)
+    done = bool(obs.done)
 
     # Update log
     emoji = {"examine_evidence": "🔍", "question_plaintiff": "❓🔵",

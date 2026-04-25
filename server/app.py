@@ -1,9 +1,10 @@
 """AI Tribunal Environment — FastAPI App"""
 import os, sys, json
+from uuid import uuid4
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Dict, List, Optional
@@ -49,38 +50,69 @@ def root():
     }
 
 
+@app.get("/agents.md", response_class=PlainTextResponse)
+def agents_md():
+    """Agent-friendly entrypoint for tools that discover spaces via plain text."""
+    return PlainTextResponse(
+        "\n".join(
+            [
+                "To use this application (ai-tribunal-env: adversarial legal reasoning benchmark):",
+                "API schema: GET https://abhishekkharat11-ai-tribunal-env.hf.space/openapi.json",
+                "Call endpoint: POST https://abhishekkharat11-ai-tribunal-env.hf.space/game/reset {\"task_level\": 1|2|3} then POST https://abhishekkharat11-ai-tribunal-env.hf.space/game/step {\"session_id\": \"...\", \"action\": {...}}",
+                "Poll result: Not required; endpoints return synchronously",
+                "Auth: Public Space today. If the Space is made protected/private later, send Bearer $HF_TOKEN",
+            ]
+        )
+    )
+
+
 # ── Stateful Game Endpoints (for the web UI) ─────────────────
-# OpenEnv's /step creates a new env per request (stateless).
-# The game UI needs state, so we maintain a global instance.
-_game_env: Optional[TribunalEnvironment] = None
+# The game UI keeps its own session-aware environment instances.
+_game_envs: Dict[str, TribunalEnvironment] = {}
 
 
 class GameResetRequest(BaseModel):
     task_level: int = 1
+    session_id: Optional[str] = None
+    continue_session: bool = False
 
 
 class GameStepRequest(BaseModel):
+    session_id: str
     action: Dict
 
 
 @app.post("/game/reset")
 def game_reset(req: GameResetRequest):
-    global _game_env
     level = max(1, min(3, req.task_level))
-    _game_env = TribunalEnvironment(task_level=level)
-    obs = _game_env.reset()
-    return JSONResponse({"observation": obs.model_dump()})
+    session_id = req.session_id or str(uuid4())
+    if not req.continue_session:
+        TribunalEnvironment.reset_session(session_id)
+    game_env = TribunalEnvironment(task_level=level)
+    _game_envs[session_id] = game_env
+    obs = game_env.reset(task_level=level, session_id=session_id)
+    return JSONResponse({"session_id": session_id, "observation": obs.model_dump()})
 
 
 @app.post("/game/step")
 def game_step(req: GameStepRequest):
-    global _game_env
-    if _game_env is None:
+    game_env = _game_envs.get(req.session_id)
+    if game_env is None:
         return JSONResponse({"error": "No active game. Call /game/reset first."}, status_code=400)
     try:
         action = TribunalAction(**req.action)
-        obs, reward, done, info = _game_env.step(action)
+        obs = game_env.step(action)
+        reward = float(obs.reward or 0.0)
+        done = bool(obs.done)
+        info = {
+            "step_score": obs.step_score,
+            "final_score": obs.final_score,
+            "episode_id": obs.metadata.get("episode_id") if obs.metadata else None,
+            "session_id": req.session_id,
+            "verdict_issued": obs.verdicts_issued > 0,
+        }
         return JSONResponse({
+            "session_id": req.session_id,
             "observation": obs.model_dump(),
             "reward": reward,
             "done": done,
@@ -145,7 +177,8 @@ def grade_action(req: GraderRequest):
 def _run_baseline_task(task_level: int) -> Dict:
     env = TribunalEnvironment(task_level=task_level)
     case = CASES[task_level - 1]
-    env.reset()
+    session_id = f"baseline-{uuid4()}"
+    obs = env.reset(task_level=task_level, session_id=session_id)
 
     BASELINE_ACTIONS = {
         1: [
@@ -215,8 +248,12 @@ def _run_baseline_task(task_level: int) -> Dict:
     for action in actions:
         if done:
             break
-        _, reward, done, _ = env.step(action)
+        obs = env.step(action)
+        reward = float(obs.reward or 0.0)
+        done = bool(obs.done)
         scores.append(round(reward, 4))
+
+    TribunalEnvironment.reset_session(session_id)
 
     final = round(sum(scores) / len(scores), 4) if scores else 0.0
     return {
