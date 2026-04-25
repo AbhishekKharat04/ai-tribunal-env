@@ -72,7 +72,7 @@ def run_task(client, task):
     print(f"[START] task={name} env={BENCHMARK} model={MODEL_NAME}", flush=True)
 
     try:
-        r = requests.post(f"{ENV_URL}/reset", json={}, timeout=30)
+        r = requests.post(f"{ENV_URL}/game/reset", json={"task_level": level}, timeout=30)
         obs = r.json().get("observation", r.json())
         done = r.json().get("done", False)
 
@@ -83,7 +83,7 @@ def run_task(client, task):
             action_str = f"{action['action_type']}:{action.get('verdict') or action.get('target','')}"
 
             try:
-                sr = requests.post(f"{ENV_URL}/step", json={"action": action}, timeout=30)
+                sr = requests.post(f"{ENV_URL}/game/step", json={"action": action}, timeout=30)
                 if sr.status_code == 200:
                     res = sr.json()
                     obs = res.get("observation", res)

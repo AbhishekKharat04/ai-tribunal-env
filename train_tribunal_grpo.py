@@ -407,8 +407,19 @@ print(f"HF Space health: {'✅ Online' if space_healthy else '⚠️ Offline (us
 for episode in range(1, NUM_EPISODES + 1):
     episode_start = time.time()
 
-    # Reset environment
+    # Cycle through all 3 tasks so training covers the full benchmark
+    task_level = ((episode - 1) % 3) + 1  # 1, 2, 3, 1, 2, 3, ...
+
+    # Reset environment for this task
     obs = env.reset()
+    # Override with correct task if the env supports it
+    try:
+        r = requests.post(f"{ENV_URL}/game/reset", json={"task_level": task_level}, timeout=15)
+        if r.status_code == 200:
+            obs = r.json().get("observation", obs)
+    except Exception:
+        pass
+
     episode_total_reward = 0.0
     episode_step_rewards = []
     done = False
@@ -461,7 +472,7 @@ for episode in range(1, NUM_EPISODES + 1):
                     "verdict": action.get("verdict"),
                     "verdict_reasoning": action.get("verdict_reasoning"),
                     "evidence_reliability_assessments": action.get("evidence_reliability_assessments", {}),
-                    "task_level": 1,
+                    "task_level": task_level,  # Use current episode's task
                 }, timeout=15)
                 if r.status_code == 200:
                     score = r.json().get("score", 0.5)
@@ -526,19 +537,36 @@ for episode in range(1, NUM_EPISODES + 1):
         eval_scores["episode"].append(episode)
         eval_scores["avg_reward"].append(np.mean(all_rewards[-EVAL_EVERY:]))
 
-        # Evaluate on each task level
+        # Evaluate using the *trained model* on each task level
         for task_lvl in [1, 2, 3]:
             try:
-                r = requests.get(
-                    f"{ENV_URL}/baseline",
-                    params={"task_level": task_lvl},
-                    timeout=30,
-                )
+                # Reset env for this task
+                r = requests.post(f"{ENV_URL}/game/reset",
+                                  json={"task_level": task_lvl}, timeout=15)
                 if r.status_code == 200:
-                    results = r.json().get("results", [{}])
-                    score = results[0].get("final_score", 0.5)
+                    eval_obs = r.json().get("observation", {})
                 else:
-                    score = 0.4 + random.random() * 0.2
+                    eval_obs = env._fallback_observation()
+
+                # Run the model for a few steps + ruling
+                eval_reward_total = 0.0
+                eval_steps = 0
+                for eval_step in range(1, 5):  # 3 examine + 1 rule
+                    eval_action = generate_action(eval_obs, eval_step, 4)
+                    try:
+                        sr = requests.post(f"{ENV_URL}/game/step",
+                                           json={"action": eval_action}, timeout=15)
+                        if sr.status_code == 200:
+                            sd = sr.json()
+                            eval_obs = sd.get("observation", eval_obs)
+                            eval_reward_total += float(sd.get("reward", 0))
+                            eval_steps += 1
+                            if sd.get("done", False):
+                                break
+                    except Exception:
+                        break
+
+                score = eval_reward_total / max(eval_steps, 1)
             except Exception:
                 score = 0.4 + random.random() * 0.2
             eval_scores[f"task{task_lvl}"].append(score)

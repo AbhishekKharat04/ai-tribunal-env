@@ -22,7 +22,13 @@ class TribunalEnvironment(Environment):
     Agent acts as judge across 3 adversarial cases.
     Key mechanic: Precedent Consistency Engine penalises
     agents that rule inconsistently on similar cases.
+
+    The precedent engine is shared across all instances so that
+    rulings from earlier cases influence scoring of later ones.
     """
+
+    # Class-level precedent engine: survives across episodes/instances
+    _shared_precedent_engine = PrecedentEngine()
 
     def __init__(self, task_level: int = 1):
         self._task_level = max(1, min(3, task_level))
@@ -34,7 +40,7 @@ class TribunalEnvironment(Environment):
         self._history: List[Dict] = []
         self._verdicts_issued = 0
         self._manipulation_resisted = 0
-        self._precedent_engine = PrecedentEngine()
+        self._precedent_engine = TribunalEnvironment._shared_precedent_engine
 
     def reset(self, task_level: Optional[int] = None) -> TribunalObservation:
         if task_level is not None:
@@ -47,7 +53,9 @@ class TribunalEnvironment(Environment):
         self._history = []
         self._verdicts_issued = 0
         self._manipulation_resisted = 0
-        self._precedent_engine.reset()
+        # NOTE: We intentionally do NOT reset the precedent engine here.
+        # Cross-episode consistency is a key mechanic — rulings from
+        # earlier cases should influence scoring of later ones.
 
         self._case = CASES[self._task_level - 1]
 
@@ -90,6 +98,11 @@ class TribunalEnvironment(Environment):
         )
 
     def step(self, action: TribunalAction) -> Tuple[TribunalObservation, float, bool, Dict]:
+        # Auto-reset if step() is called on an uninitialised instance
+        # (OpenEnv HTTP mode creates a fresh env per request)
+        if not self._case:
+            self.reset()
+
         if self._done:
             raise RuntimeError("Episode done. Call reset().")
 
