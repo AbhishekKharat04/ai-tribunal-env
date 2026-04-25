@@ -8,7 +8,7 @@ I'll be honest: when I signed up for this hackathon, I had no idea what OpenEnv 
 
 ## Where the idea came from
 
-45 million. That's the number of pending court cases in India right now. I didn't know that until I was researching ideas for the hackathon. My family had a property dispute years ago — it dragged on for 6 years in a lower court. 6 years. And ours was a "simple" case.
+Over 50 million. That's the number of pending court cases in India right now. I didn't know that until I was researching ideas for the hackathon. My family had a property dispute years ago — it dragged on for 6 years in a lower court. 6 years. And ours was a "simple" case.
 
 Fast-track tribunals were created to fix this — consumer disputes, employment issues, property fraud. But they're still overwhelmed. And the more I thought about it, the more I realized: this is a perfect RL problem. A judge reads conflicting information, decides what to trust, and issues a ruling. That's exactly what we want an LLM to learn.
 
