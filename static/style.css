@@ -860,6 +860,117 @@ select.game-input { cursor: pointer; }
     line-height: 1.5;
 }
 
+.cojudge-panel {
+    background: rgba(52, 152, 219, 0.08);
+    border: 1px solid rgba(52, 152, 219, 0.18);
+    border-radius: 14px;
+    padding: 14px;
+}
+
+.cojudge-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.cojudge-kicker {
+    font-size: 0.74rem;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: var(--plaintiff);
+    font-weight: 700;
+}
+
+.cojudge-remaining {
+    font-size: 0.74rem;
+    color: var(--text-dim);
+}
+
+.cojudge-copy {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    margin-bottom: 12px;
+}
+
+.btn-cojudge {
+    width: 100%;
+    background: linear-gradient(135deg, rgba(52,152,219,0.92), rgba(41,128,185,0.96));
+    border: none;
+    color: white;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.btn-cojudge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(52,152,219,0.22);
+}
+
+.btn-cojudge:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.cojudge-box {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(10,10,18,0.55);
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+.cojudge-status {
+    color: var(--accent-glow);
+    font-size: 0.74rem;
+    line-height: 1.45;
+    margin-bottom: 8px;
+}
+
+.cojudge-action {
+    color: var(--text);
+    font-size: 0.84rem;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: 8px;
+}
+
+.cojudge-why,
+.cojudge-draft {
+    color: var(--text-dim);
+    font-size: 0.79rem;
+    line-height: 1.55;
+}
+
+.cojudge-draft {
+    margin-top: 10px;
+}
+
+.cojudge-watch {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.cojudge-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: rgba(52,152,219,0.12);
+    border: 1px solid rgba(52,152,219,0.18);
+    color: var(--text);
+    font-size: 0.72rem;
+}
+
 .log-empty {
     color: var(--text-dim);
     font-size: 0.8rem;

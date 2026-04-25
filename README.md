@@ -38,6 +38,48 @@ Local setup is only needed if you want to reproduce training runs or call the HT
 
 ## 🧠 What Makes This Different
 
+## Use Credits Wisely
+
+Do **not** upgrade the current Space to GPU just to host the environment and UI. The benchmark server itself runs well on CPU unless you change it to load a model locally.
+
+The best way to use your credits is:
+
+1. **Keep the Space on CPU** for the courtroom game and environment API.
+2. **Use Hugging Face inference credits** for the built-in `AI Co-Judge` helper.
+3. **Use Hugging Face Jobs / GPU credits** for training or fine-tuning stronger models.
+4. **Use Cursor credits** to accelerate code changes, refactors, data generation, and benchmark expansion â€” not as GPU compute.
+
+### Enable the AI Co-Judge on the Space
+
+Add these **Space secrets** in Hugging Face:
+
+- `HF_TOKEN` = a fine-grained Hugging Face token with permission to call Inference Providers
+- `AI_JUDGE_MODEL` = optional, defaults to `Qwen/Qwen2.5-72B-Instruct:fastest`
+- `AI_JUDGE_MAX_CALLS_PER_SESSION` = optional, defaults to `3`
+
+Once the Space restarts, judges can click **Ask AI Co-Judge** inside the courtroom. This uses inference credits only when requested, so it is much more efficient than paying for idle GPU hardware on the Space.
+
+### Use HF GPU Credits for Training
+
+The training script is now also a UV script, so you can run it on Hugging Face Jobs:
+
+```bash
+hf jobs uv run --flavor a10g-large --timeout 4h --secrets HF_TOKEN train_tribunal_grpo.py
+```
+
+Optional environment variables:
+
+- `ENV_URL` to point training at a different environment deployment
+- `MODEL_NAME` to swap the base model
+- `NUM_EPISODES`, `EVAL_EVERY`, `MAX_STEPS_PER_EPISODE`, `LEARNING_RATE`
+- `PUSH_TO_HUB_REPO` to upload the resulting adapters and tokenizer automatically
+
+### When a GPU Space *does* make sense
+
+Upgrade the Space to GPU only if you later change the backend to load a local model directly inside the app process.
+
+---
+
 Most RL environments test knowledge or reflexes. This environment tests **judgment under conflict**.
 
 Three unique mechanics no other environment has:
@@ -191,6 +233,7 @@ The Space now exposes a lightweight agent wrapper at [`/agents.md`](https://abhi
 | `/baseline` | GET | Run baseline agent |
 | `/game/reset` | POST | Start a browser/game session |
 | `/game/step` | POST | Continue a browser/game session |
+| `/game/cojudge` | POST | Ask the optional HF Router-backed AI Co-Judge for the next best move |
 | `/agents.md` | GET | Plain-text wrapper for external coding agents and tool discovery |
 | `/health` | GET | Health check |
 | `/docs` | GET | Swagger UI |

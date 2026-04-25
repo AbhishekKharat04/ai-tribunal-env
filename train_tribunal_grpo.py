@@ -1,3 +1,16 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#   "unsloth",
+#   "trl",
+#   "openenv-core>=0.2.0",
+#   "datasets",
+#   "matplotlib",
+#   "requests",
+#   "peft",
+#   "numpy",
+# ]
+# ///
 """
 AI Tribunal Environment — GRPO Training Script
 ================================================
@@ -6,7 +19,7 @@ Train an LLM to be a fair judge using Reinforcement Learning.
 This script connects to the live AI Tribunal HF Space and uses GRPO
 (Group Relative Policy Optimization) via TRL + Unsloth to train the model.
 
-Run on: Kaggle (free T4 GPU) or Google Colab (free T4 GPU)
+Run on: Kaggle (free T4 GPU), Google Colab (free T4 GPU), or Hugging Face Jobs
 
 How to use:
 -----------
@@ -14,6 +27,9 @@ How to use:
 2. Paste each section below into separate cells
 3. Run all cells
 4. Download the generated plots (reward_curve.png, task_scores.png)
+
+HF Jobs example:
+    hf jobs uv run --flavor a10g-large --timeout 4h --secrets HF_TOKEN train_tribunal_grpo.py
 """
 
 # ============================================================
@@ -30,16 +46,17 @@ import numpy as np
 from collections import defaultdict
 
 # Environment URL — your live HF Space
-ENV_URL = "https://abhishekkharat11-ai-tribunal-env.hf.space"
+ENV_URL = os.getenv("ENV_URL", "https://abhishekkharat11-ai-tribunal-env.hf.space")
 
 # Model — small enough for free T4 GPU
-MODEL_NAME = "unsloth/Qwen2.5-1.5B-Instruct-bnb-4bit"
+MODEL_NAME = os.getenv("MODEL_NAME", "unsloth/Qwen2.5-1.5B-Instruct-bnb-4bit")
 
 # Training config
-NUM_EPISODES = 60        # Total training episodes
-EVAL_EVERY = 10          # Evaluate every N episodes
-MAX_STEPS_PER_EPISODE = 6
-LEARNING_RATE = 2e-5
+NUM_EPISODES = int(os.getenv("NUM_EPISODES", "60"))        # Total training episodes
+EVAL_EVERY = int(os.getenv("EVAL_EVERY", "10"))            # Evaluate every N episodes
+MAX_STEPS_PER_EPISODE = int(os.getenv("MAX_STEPS_PER_EPISODE", "6"))
+LEARNING_RATE = float(os.getenv("LEARNING_RATE", "2e-5"))
+PUSH_TO_HUB_REPO = os.getenv("PUSH_TO_HUB_REPO", "").strip()
 
 print("=" * 60)
 print("AI Tribunal Environment — GRPO Training")
@@ -663,6 +680,12 @@ if eval_scores["episode"]:
 print(f"\nTotal episodes: {NUM_EPISODES}")
 print(f"Model: {MODEL_NAME}")
 print("=" * 60)
+
+if PUSH_TO_HUB_REPO:
+    print(f"\nPushing adapters and tokenizer to Hugging Face Hub: {PUSH_TO_HUB_REPO}")
+    model.push_to_hub(PUSH_TO_HUB_REPO)
+    tokenizer.push_to_hub(PUSH_TO_HUB_REPO)
+    print("Upload complete.")
 
 
 # ============================================================

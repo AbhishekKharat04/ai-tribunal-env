@@ -11,6 +11,7 @@ from typing import Dict, List, Optional
 
 from openenv.core.env_server import create_app
 from models import TribunalAction, TribunalObservation
+from server.ai_judge import request_hint as request_ai_judge_hint
 from server.tribunal_environment import TribunalEnvironment
 from server.cases import CASES
 
@@ -69,6 +70,8 @@ def agents_md():
 # ── Stateful Game Endpoints (for the web UI) ─────────────────
 # The game UI keeps its own session-aware environment instances.
 _game_envs: Dict[str, TribunalEnvironment] = {}
+_ai_judge_calls: Dict[str, int] = {}
+AI_JUDGE_MAX_CALLS_PER_SESSION = max(1, int(os.environ.get("AI_JUDGE_MAX_CALLS_PER_SESSION", "3")))
 
 
 class GameResetRequest(BaseModel):
@@ -82,16 +85,29 @@ class GameStepRequest(BaseModel):
     action: Dict
 
 
+class GameCoJudgeRequest(BaseModel):
+    session_id: str
+
+
 @app.post("/game/reset")
 def game_reset(req: GameResetRequest):
     level = max(1, min(3, req.task_level))
     session_id = req.session_id or str(uuid4())
     if not req.continue_session:
         TribunalEnvironment.reset_session(session_id)
+        _ai_judge_calls.pop(session_id, None)
     game_env = TribunalEnvironment(task_level=level)
     _game_envs[session_id] = game_env
     obs = game_env.reset(task_level=level, session_id=session_id)
-    return JSONResponse({"session_id": session_id, "observation": obs.model_dump()})
+    return JSONResponse({
+        "session_id": session_id,
+        "observation": obs.model_dump(),
+        "ai_judge": {
+            "max_calls_per_session": AI_JUDGE_MAX_CALLS_PER_SESSION,
+            "calls_used": _ai_judge_calls.get(session_id, 0),
+            "calls_remaining": max(0, AI_JUDGE_MAX_CALLS_PER_SESSION - _ai_judge_calls.get(session_id, 0)),
+        },
+    })
 
 
 @app.post("/game/step")
@@ -120,6 +136,39 @@ def game_step(req: GameStepRequest):
         })
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/game/cojudge")
+def game_cojudge(req: GameCoJudgeRequest):
+    game_env = _game_envs.get(req.session_id)
+    if game_env is None:
+        return JSONResponse({"error": "No active game. Call /game/reset first."}, status_code=400)
+
+    calls_used = _ai_judge_calls.get(req.session_id, 0)
+    calls_remaining = max(0, AI_JUDGE_MAX_CALLS_PER_SESSION - calls_used)
+    if calls_remaining <= 0:
+        return JSONResponse({
+            "enabled": True,
+            "session_id": req.session_id,
+            "message": f"AI Co-Judge hint budget exhausted for this session ({AI_JUDGE_MAX_CALLS_PER_SESSION} calls).",
+            "remaining_hints": 0,
+            "suggestion": None,
+        })
+
+    result = request_ai_judge_hint(game_env)
+    if result.get("enabled"):
+        _ai_judge_calls[req.session_id] = calls_used + 1
+        calls_used += 1
+        calls_remaining = max(0, AI_JUDGE_MAX_CALLS_PER_SESSION - calls_used)
+
+    return JSONResponse({
+        "enabled": result.get("enabled", False),
+        "session_id": req.session_id,
+        "message": result.get("message", ""),
+        "model": result.get("model"),
+        "remaining_hints": calls_remaining,
+        "suggestion": result.get("suggestion"),
+    })
 
 
 @app.get("/tasks")

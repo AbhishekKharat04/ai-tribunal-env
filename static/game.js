@@ -8,6 +8,7 @@ let currentAction = "examine_evidence";
 let gameState = null;
 let isDone = false;
 let gameSessionId = null;
+let coJudgeRemainingHints = 0;
 const TOUR_STORAGE_KEY = "ai-tribunal-tour-seen";
 const TOUR_STEPS = [
     {
@@ -181,6 +182,81 @@ function resetActionComposer() {
     updateActionGuidance();
 }
 
+function updateCoJudgeSummary() {
+    const remaining = document.getElementById("cojudge-remaining");
+    const button = document.getElementById("btn-cojudge");
+    if (!remaining || !button) return;
+
+    const hintLabel = `${coJudgeRemainingHints} hint${coJudgeRemainingHints === 1 ? "" : "s"} left`;
+    remaining.textContent = hintLabel;
+    button.disabled = isDone || coJudgeRemainingHints <= 0 || !gameSessionId;
+}
+
+function showCoJudgeResult(message, suggestion = null) {
+    const box = document.getElementById("cojudge-box");
+    const status = document.getElementById("cojudge-status");
+    const action = document.getElementById("cojudge-action");
+    const why = document.getElementById("cojudge-why");
+    const watch = document.getElementById("cojudge-watch");
+    const draft = document.getElementById("cojudge-draft");
+    if (!box || !status || !action || !why || !watch || !draft) return;
+
+    status.textContent = message || "";
+    if (!suggestion) {
+        action.textContent = "";
+        why.textContent = "";
+        watch.innerHTML = "";
+        draft.textContent = "";
+        if (message) {
+            box.classList.remove("hidden");
+        } else {
+            box.classList.add("hidden");
+        }
+        return;
+    }
+
+    const verdictSuffix = suggestion.recommended_verdict ? ` -> ${suggestion.recommended_verdict}` : "";
+    action.textContent = `Suggested next move: ${suggestion.recommended_action_type}${suggestion.target ? ` (${suggestion.target})` : ""}${verdictSuffix}`;
+    why.textContent = suggestion.why_now || "";
+
+    watch.innerHTML = "";
+    (suggestion.watch_for || []).forEach((item) => {
+        const chip = document.createElement("span");
+        chip.className = "cojudge-chip";
+        chip.textContent = item;
+        watch.appendChild(chip);
+    });
+
+    draft.textContent = suggestion.draft_reasoning || "";
+    box.classList.remove("hidden");
+}
+
+async function askCoJudge() {
+    if (!gameSessionId || isDone) return;
+
+    const button = document.getElementById("btn-cojudge");
+    if (!button) return;
+    button.disabled = true;
+    button.textContent = "Consulting...";
+
+    try {
+        const res = await fetch(`${BASE}/game/cojudge`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ session_id: gameSessionId }),
+        });
+        const data = await res.json();
+        coJudgeRemainingHints = data.remaining_hints ?? coJudgeRemainingHints;
+        updateCoJudgeSummary();
+        showCoJudgeResult(data.message || "AI Co-Judge updated.", data.suggestion || null);
+    } catch (err) {
+        showCoJudgeResult(`AI Co-Judge request failed: ${err.message}`);
+    } finally {
+        button.textContent = "Ask AI Co-Judge";
+        updateCoJudgeSummary();
+    }
+}
+
 // ─── SPLASH → GAME ─────────────────────────────────────────
 async function startCase(level) {
     const btn = document.querySelector(`.case-btn[data-level="${level}"]`);
@@ -196,11 +272,14 @@ async function startCase(level) {
         const data = await res.json();
         gameSessionId = data.session_id || null;
         gameState = data.observation || data;
+        coJudgeRemainingHints = data.ai_judge?.calls_remaining ?? 0;
         isDone = false;
         resetActionComposer();
         document.getElementById("splash").classList.add("hidden");
         document.getElementById("game").classList.remove("hidden");
         renderGame();
+        showCoJudgeResult("", null);
+        updateCoJudgeSummary();
         maybeOpenTour();
     } catch (err) {
         alert("Could not connect to the environment server. Make sure it's running!");
@@ -219,6 +298,8 @@ function backToSplash() {
     isDone = false;
     gameState = null;
     gameSessionId = null;
+    coJudgeRemainingHints = 0;
+    showCoJudgeResult("", null);
 }
 
 // ─── RENDER GAME STATE ──────────────────────────────────────
@@ -300,6 +381,7 @@ function renderGame() {
     // Sliders
     buildSliders(obs.evidence_items || []);
     updateActionGuidance();
+    updateCoJudgeSummary();
     refreshTourHighlight();
 }
 

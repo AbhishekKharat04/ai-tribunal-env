@@ -180,6 +180,22 @@
                     <div id="slider-container"></div>
                 </details>
 
+                <div class="cojudge-panel">
+                    <div class="cojudge-panel-header">
+                        <span class="cojudge-kicker">AI Co-Judge</span>
+                        <span id="cojudge-remaining" class="cojudge-remaining">3 hints left</span>
+                    </div>
+                    <p class="cojudge-copy">Uses Hugging Face inference credits only when you ask for help. This works on the current CPU Space.</p>
+                    <button id="btn-cojudge" class="btn-cojudge" onclick="askCoJudge()">Ask AI Co-Judge</button>
+                    <div id="cojudge-box" class="cojudge-box hidden">
+                        <div id="cojudge-status" class="cojudge-status"></div>
+                        <div id="cojudge-action" class="cojudge-action"></div>
+                        <p id="cojudge-why" class="cojudge-why"></p>
+                        <div id="cojudge-watch" class="cojudge-watch"></div>
+                        <p id="cojudge-draft" class="cojudge-draft"></p>
+                    </div>
+                </div>
+
                 <button id="btn-submit" class="btn-submit" onclick="submitAction()">
                     ⚡ SUBMIT ACTION
                 </button>
