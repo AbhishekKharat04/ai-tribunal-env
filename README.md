@@ -101,7 +101,7 @@ print(f"Score: {result['observation']['step_score']}")
 
 ## 🇮🇳 Real-World Impact
 
-- India has **45 million pending court cases**
+- India has **over 50 million pending court cases**
 - Fast-track tribunals handle millions of consumer, employment, and property disputes annually
 - LLMs trained on this environment learn adversarial reasoning skills transferable to real legal assistance
 

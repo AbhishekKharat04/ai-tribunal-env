@@ -9,7 +9,7 @@
 
 Most RL environments test knowledge, reflexes, or puzzle-solving. But real-world professional tasks—especially in legal, HR, or customer service domains—require **judgment under conflict**.
 
-India has 45 million pending court cases, with fast-track tribunals handling millions of consumer, employment, and property disputes annually. If LLMs are going to assist in these domains, they need to learn adversarial reasoning skills. They need to know that confidence does not equal truth.
+India has over 50 million pending court cases, with fast-track tribunals handling millions of consumer, employment, and property disputes annually. If LLMs are going to assist in these domains, they need to learn adversarial reasoning skills. They need to know that confidence does not equal truth.
 
 I built the **AI Tribunal Environment** to test exactly this.
 
