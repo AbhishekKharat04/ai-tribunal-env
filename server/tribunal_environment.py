@@ -98,6 +98,7 @@ class TribunalEnvironment(Environment):
             "verdicts_issued": self._verdicts_issued,
             "manipulation_resisted": self._manipulation_resisted,
             "step_count": self._state.step_count,
+            "case": copy.deepcopy(self._case),
         }
         self._put_snapshot(episode_id, snapshot)
 
@@ -127,7 +128,15 @@ class TribunalEnvironment(Environment):
         self._history = copy.deepcopy(snapshot["history"])
         self._verdicts_issued = int(snapshot["verdicts_issued"])
         self._manipulation_resisted = int(snapshot["manipulation_resisted"])
-        self._case = CASES[self._task_level - 1]
+        snapshot_case = snapshot.get("case")
+        if snapshot_case:
+            self._case = copy.deepcopy(snapshot_case)
+            self._task_level = max(
+                1,
+                min(3, int(self._case.get("level", self._task_level))),
+            )
+        else:
+            self._case = CASES[self._task_level - 1]
         return True
 
     def _build_observation(
@@ -181,8 +190,11 @@ class TribunalEnvironment(Environment):
         episode_id: Optional[str] = None,
         task_level: Optional[int] = None,
         session_id: Optional[str] = None,
+        case_override: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> TribunalObservation:
+        selected_case = case_override or kwargs.get("case_override")
+
         if task_level is not None:
             self._task_level = max(1, min(3, task_level))
         elif kwargs.get("task_level") is not None:
@@ -203,7 +215,14 @@ class TribunalEnvironment(Environment):
         self._verdicts_issued = 0
         self._manipulation_resisted = 0
 
-        self._case = CASES[self._task_level - 1]
+        if selected_case is not None:
+            self._case = copy.deepcopy(selected_case)
+            self._task_level = max(
+                1,
+                min(3, int(self._case.get("level", self._task_level))),
+            )
+        else:
+            self._case = CASES[self._task_level - 1]
         self._persist_snapshot()
         return self._build_observation(
             reward=0.0,

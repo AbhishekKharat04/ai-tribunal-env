@@ -92,14 +92,19 @@ class GameCoJudgeRequest(BaseModel):
 
 @app.post("/game/reset")
 def game_reset(req: GameResetRequest):
-    level = max(1, min(8, req.task_level))  # supports all 8 curated cases
+    level = max(1, min(len(CASES), req.task_level))
+    selected_case = CASES[level - 1]
     session_id = req.session_id or str(uuid4())
     if not req.continue_session:
         TribunalEnvironment.reset_session(session_id)
         _ai_judge_calls.pop(session_id, None)
-    game_env = TribunalEnvironment(task_level=level)
+    game_env = TribunalEnvironment(task_level=selected_case["level"])
     _game_envs[session_id] = game_env
-    obs = game_env.reset(task_level=level, session_id=session_id)
+    obs = game_env.reset(
+        task_level=selected_case["level"],
+        session_id=session_id,
+        case_override=selected_case,
+    )
     return JSONResponse({
         "session_id": session_id,
         "observation": obs.model_dump(),
@@ -126,14 +131,12 @@ def game_generate(req: GameGenerateRequest):
     session_id = str(uuid4())
     TribunalEnvironment.reset_session(session_id)
     game_env = TribunalEnvironment(task_level=case["level"])
-    game_env._case = case  # inject generated case directly
-    game_env._max_steps = case["max_steps"]
-    game_env._step = 0
-    game_env._done = False
-    game_env._history = []
-    game_env._cumulative_score = 0.0
     _game_envs[session_id] = game_env
-    obs = game_env.reset(task_level=case["level"], session_id=session_id)
+    obs = game_env.reset(
+        task_level=case["level"],
+        session_id=session_id,
+        case_override=case,
+    )
     return JSONResponse({
         "session_id": session_id,
         "generated_case": {

@@ -26,15 +26,14 @@ tags:
 - Public Hugging Face Space: reachable at the submitted URL.
 - Public GitHub repository: reachable at the submitted URL.
 - OpenEnv manifest committed: `openenv.yaml`.
-- Training artifacts currently committed in-repo: `reward_curve.png`, `task_scores.png`.
-- Training script now emits `loss_curve.png` on the next rerun.
+- Training artifacts currently committed in-repo: `reward_curve.png`, `task_scores.png`, `loss_curve.png`.
 - Runnable training assets committed: `AI_Tribunal_Training.ipynb`, `train_tribunal_grpo.py`.
   The notebook is regenerated from the script and defaults to a faster `submission` profile for judge reruns.
 - Separate writeup markdown committed: `blog.md`.
 
 ## Final Submission Note
 
-If the validator strictly requires both a reward curve and a loss curve as committed image files, the last remaining manual step is to rerun `train_tribunal_grpo.py` once and commit the generated `loss_curve.png`.
+The repository now includes committed reward, task-score, and loss curves from a real training run, so validation does not depend on external dashboards or transient notebook outputs.
 
 ## Judge Quick Start
 
@@ -141,9 +140,8 @@ The repository includes committed training plots directly in the repo so validat
 ![Task score curves](task_scores.png)
 *Task-level score plot committed in-repo.*
 
-### Important note on the loss curve
-
-The current committed training run does **not** yet include a checked-in `loss_curve.png`. The training script has been updated to save one on the next rerun, but that image still needs to be generated from a real run before submission if the validator enforces a strict loss-curve requirement.
+![Training loss curve](loss_curve.png)
+*Loss curve committed in-repo from the same final training run.*
 
 ## Kaggle Note
 
