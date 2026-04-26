@@ -2,10 +2,10 @@ name: ai_tribunal_env
 version: 0.1.0
 description: >
   AI Tribunal Environment. An agent acts as a judge across 3 adversarial
-  legal cases — consumer dispute, employment termination, and property fraud.
+  legal cases - consumer dispute, employment termination, and property fraud.
   Key mechanic: Precedent Consistency Engine penalises agents that rule
   inconsistently across similar cases, testing cross-episode jurisprudential
-  reasoning. Evidence contains hidden truth values — agents must detect
+  reasoning. Evidence contains hidden truth values - agents must detect
   fabrications. Parties actively attempt manipulation.
 author: Abhishek Kharat
 license: MIT

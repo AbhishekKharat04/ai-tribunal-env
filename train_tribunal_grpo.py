@@ -26,7 +26,7 @@ How to use:
 1. Go to kaggle.com -> New Notebook -> Enable GPU (T4 x2)
 2. Paste each section below into separate cells
 3. Run all cells
-4. Download the generated plots (reward_curve.png, task_scores.png)
+4. Download the generated plots (reward_curve.png, loss_curve.png, task_scores.png)
 
 HF Jobs example:
     hf jobs uv run --flavor a10g-large --timeout 4h --secrets HF_TOKEN train_tribunal_grpo.py
@@ -424,6 +424,8 @@ optimizer = AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.01)
 all_rewards = []
 episode_rewards = []
 step_rewards_by_episode = []
+loss_history = []
+episode_loss_means = []
 eval_scores = {"episode": [], "avg_reward": [], "task1": [], "task2": [], "task3": []}
 
 print("\n" + "=" * 60)
@@ -446,6 +448,7 @@ for episode in range(1, NUM_EPISODES + 1):
 
     episode_total_reward = 0.0
     episode_step_rewards = []
+    episode_losses = []
     done = False
 
     for step in range(1, MAX_STEPS_PER_EPISODE + 1):
@@ -529,6 +532,9 @@ for episode in range(1, NUM_EPISODES + 1):
             model.train()
             outputs = model(**target_inputs, labels=target_inputs["input_ids"])
             loss = outputs.loss * advantage
+            loss_value = float(loss.detach().item())
+            loss_history.append(loss_value)
+            episode_losses.append(loss_value)
             loss.backward()
 
             if step % 2 == 0:  # Accumulate gradients
@@ -546,6 +552,9 @@ for episode in range(1, NUM_EPISODES + 1):
     all_rewards.append(avg_episode_reward)
     episode_rewards.append(episode_total_reward)
     step_rewards_by_episode.append(episode_step_rewards)
+    episode_loss_means.append(
+        float(np.mean(episode_losses)) if episode_losses else np.nan
+    )
 
     elapsed = time.time() - episode_start
     print(
@@ -652,7 +661,54 @@ plt.savefig("task_scores.png", dpi=150, bbox_inches="tight")
 plt.savefig("reward_curve_trained.png", dpi=150, bbox_inches="tight")
 plt.savefig("task_scores_trained.png", dpi=150, bbox_inches="tight")
 plt.show()
-print("📈 Plots saved: reward_curve.png, task_scores.png, reward_curve_trained.png, task_scores_trained.png")
+print("Plots saved: reward_curve.png, task_scores.png, reward_curve_trained.png, task_scores_trained.png")
+
+plt.figure(figsize=(8, 6))
+loss_x = [
+    episode_idx
+    for episode_idx, loss_value in enumerate(episode_loss_means, start=1)
+    if not np.isnan(loss_value)
+]
+loss_y = [loss_value for loss_value in episode_loss_means if not np.isnan(loss_value)]
+if loss_x:
+    plt.plot(
+        loss_x,
+        loss_y,
+        color="#8E24AA",
+        linewidth=2,
+        label="Mean loss per episode",
+    )
+    loss_window = max(3, len(loss_y) // 10)
+    if len(loss_y) >= loss_window:
+        smoothed_loss = np.convolve(
+            loss_y, np.ones(loss_window) / loss_window, mode="valid"
+        )
+        plt.plot(
+            range(loss_window, len(loss_y) + 1),
+            smoothed_loss,
+            color="#5E35B1",
+            linewidth=2.5,
+            label=f"Smoothed (window={loss_window})",
+        )
+else:
+    plt.text(
+        0.5,
+        0.5,
+        "No positive-advantage updates recorded",
+        ha="center",
+        va="center",
+        fontsize=12,
+    )
+plt.xlabel("Episode", fontsize=12)
+plt.ylabel("Loss", fontsize=12)
+plt.title("AI Tribunal - GRPO Training Loss Curve", fontsize=14, fontweight="bold")
+if loss_x:
+    plt.legend(fontsize=10, loc="best")
+plt.tight_layout()
+plt.savefig("loss_curve.png", dpi=150, bbox_inches="tight")
+plt.savefig("loss_curve_trained.png", dpi=150, bbox_inches="tight")
+plt.show()
+print("Loss plots saved: loss_curve.png, loss_curve_trained.png")
 
 
 # ============================================================
