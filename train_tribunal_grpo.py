@@ -52,9 +52,45 @@ ENV_URL = os.getenv("ENV_URL", "https://abhishekkharat11-ai-tribunal-env.hf.spac
 MODEL_NAME = os.getenv("MODEL_NAME", "unsloth/Qwen2.5-1.5B-Instruct-bnb-4bit")
 
 # Training config
-NUM_EPISODES = int(os.getenv("NUM_EPISODES", "60"))        # Total training episodes
-EVAL_EVERY = int(os.getenv("EVAL_EVERY", "10"))            # Evaluate every N episodes
-MAX_STEPS_PER_EPISODE = int(os.getenv("MAX_STEPS_PER_EPISODE", "6"))
+RUN_PROFILE = os.getenv("RUN_PROFILE", "submission").strip().lower()
+PROFILE_DEFAULTS = {
+    "submission": {
+        "num_episodes": "24",
+        "eval_every": "6",
+        "max_steps_per_episode": "4",
+        "rollout_samples": "2",
+        "prompt_max_length": "1280",
+        "target_max_length": "1536",
+        "train_max_new_tokens": "160",
+        "eval_max_new_tokens": "192",
+    },
+    "full": {
+        "num_episodes": "60",
+        "eval_every": "10",
+        "max_steps_per_episode": "6",
+        "rollout_samples": "4",
+        "prompt_max_length": "1536",
+        "target_max_length": "1800",
+        "train_max_new_tokens": "300",
+        "eval_max_new_tokens": "400",
+    },
+}
+PROFILE = PROFILE_DEFAULTS.get(RUN_PROFILE, PROFILE_DEFAULTS["submission"])
+
+NUM_EPISODES = int(os.getenv("NUM_EPISODES", PROFILE["num_episodes"]))
+EVAL_EVERY = int(os.getenv("EVAL_EVERY", PROFILE["eval_every"]))
+MAX_STEPS_PER_EPISODE = int(
+    os.getenv("MAX_STEPS_PER_EPISODE", PROFILE["max_steps_per_episode"])
+)
+ROLLOUT_SAMPLES = int(os.getenv("ROLLOUT_SAMPLES", PROFILE["rollout_samples"]))
+PROMPT_MAX_LENGTH = int(os.getenv("PROMPT_MAX_LENGTH", PROFILE["prompt_max_length"]))
+TARGET_MAX_LENGTH = int(os.getenv("TARGET_MAX_LENGTH", PROFILE["target_max_length"]))
+TRAIN_MAX_NEW_TOKENS = int(
+    os.getenv("TRAIN_MAX_NEW_TOKENS", PROFILE["train_max_new_tokens"])
+)
+EVAL_MAX_NEW_TOKENS = int(
+    os.getenv("EVAL_MAX_NEW_TOKENS", PROFILE["eval_max_new_tokens"])
+)
 LEARNING_RATE = float(os.getenv("LEARNING_RATE", "2e-5"))
 PUSH_TO_HUB_REPO = os.getenv("PUSH_TO_HUB_REPO", "").strip()
 
@@ -63,7 +99,15 @@ print("AI Tribunal Environment — GRPO Training")
 print("=" * 60)
 print(f"Environment: {ENV_URL}")
 print(f"Model: {MODEL_NAME}")
+print(f"Run profile: {RUN_PROFILE}")
 print(f"Episodes: {NUM_EPISODES}")
+print(
+    "Generation config: "
+    f"samples={ROLLOUT_SAMPLES}, "
+    f"train_tokens={TRAIN_MAX_NEW_TOKENS}, "
+    f"eval_tokens={EVAL_MAX_NEW_TOKENS}, "
+    f"steps={MAX_STEPS_PER_EPISODE}"
+)
 
 
 # ============================================================
@@ -240,6 +284,9 @@ Step {step}/{max_steps}. {instruction}"""
 # ============================================================
 from unsloth import FastLanguageModel
 import torch
+from transformers.utils import logging as transformers_logging
+
+transformers_logging.set_verbosity_error()
 
 model, tokenizer = FastLanguageModel.from_pretrained(
     model_name=MODEL_NAME,
@@ -260,6 +307,9 @@ model = FastLanguageModel.get_peft_model(
     use_gradient_checkpointing="unsloth",
     random_state=42,
 )
+
+if getattr(model, "generation_config", None) is not None:
+    model.generation_config.max_length = None
 
 print(f"\nModel loaded: {MODEL_NAME}")
 print(f"Trainable parameters: {model.print_trainable_parameters()}")
@@ -287,7 +337,7 @@ def generate_action(obs, step, max_steps):
     with torch.no_grad():
         outputs = model.generate(
             **inputs,
-            max_new_tokens=400,
+            max_new_tokens=EVAL_MAX_NEW_TOKENS,
             temperature=0.7,
             top_p=0.9,
             do_sample=True,
@@ -465,18 +515,17 @@ for episode in range(1, NUM_EPISODES + 1):
             messages, tokenize=False, add_generation_prompt=True
         )
         inputs = tokenizer(text, return_tensors="pt", truncation=True,
-                          max_length=1536).to(model.device)
+                          max_length=PROMPT_MAX_LENGTH).to(model.device)
 
         # Generate multiple completions for GRPO
-        num_samples = 4
+        num_samples = ROLLOUT_SAMPLES
         all_outputs = []
-        all_log_probs = []
 
         for _ in range(num_samples):
             with torch.no_grad():
                 outputs = model.generate(
                     **inputs,
-                    max_new_tokens=300,
+                    max_new_tokens=TRAIN_MAX_NEW_TOKENS,
                     temperature=0.8,
                     top_p=0.9,
                     do_sample=True,
@@ -525,7 +574,7 @@ for episode in range(1, NUM_EPISODES + 1):
         target_text = text + json.dumps(best_action)
         target_inputs = tokenizer(
             target_text, return_tensors="pt", truncation=True,
-            max_length=1800
+            max_length=TARGET_MAX_LENGTH
         ).to(model.device)
 
         if advantage > 0:  # Only update on positive advantage

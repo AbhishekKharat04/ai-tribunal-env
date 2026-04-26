@@ -29,6 +29,7 @@ tags:
 - Training artifacts currently committed in-repo: `reward_curve.png`, `task_scores.png`.
 - Training script now emits `loss_curve.png` on the next rerun.
 - Runnable training assets committed: `AI_Tribunal_Training.ipynb`, `train_tribunal_grpo.py`.
+  The notebook is regenerated from the script and defaults to a faster `submission` profile for judge reruns.
 - Separate writeup markdown committed: `blog.md`.
 
 ## Final Submission Note
