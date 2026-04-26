@@ -4,15 +4,13 @@
 
 ---
 
-I'm going to be honest — this project started from frustration, not inspiration.
+India currently has over **4.7 crore pending court cases**. Many of these cases drag on for years not because the facts are inherently complex, but because the system is overwhelmed and evidence often gets manipulated. Backdated documents, witnesses changing statements, and lawyers using procedural tactics are common issues that a human judge reviewing 50+ cases a day might struggle to catch.
 
-A few months ago, someone in my extended family got stuck in a consumer complaint case. They bought a product that was clearly defective, had receipts, had photos, had everything. Open and shut, right? Except it wasn't. The company's lawyer kept filing adjournments, submitted an "internal inspection report" that nobody had ever seen before the hearing, and the whole thing dragged for months. The report was obviously made after the complaint was filed, but nobody flagged it.
+This is the problem I wanted to tackle for the OpenEnv Hackathon. 
 
-That got me thinking about how many cases like this exist in India. The numbers are insane — over **4.7 crore cases pending** across Indian courts as of 2024. District courts alone have a backlog that would take decades to clear at the current pace. And it's not just about speed. A lot of these cases involve manipulation — backdated documents, witnesses who change their statements, lawyers using procedural tricks to confuse the other side. A human judge reviewing 50+ cases a day is going to miss some of these things. That's just reality.
+You can't just ask an LLM "is this evidence fake?" and expect a reliable answer. The model needs to learn *how* to think through conflicting information, detect manipulation, and maintain consistency. To do that, it needs a training ground.
 
-So when the OpenEnv hackathon came along, I thought — what if I could build an environment that teaches AI to do exactly this? Not replace judges, but learn the skill of judging. Learn to spot when evidence doesn't add up. Learn to resist pressure. Learn to be consistent.
-
-That's AI Tribunal.
+That's why I built the **AI Tribunal Environment**. It's not about replacing judges; it's about teaching AI the skill of fair and robust judgment under pressure.
 
 ---
 
