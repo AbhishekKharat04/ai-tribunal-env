@@ -13,10 +13,56 @@
     <!-- SPLASH SCREEN -->
     <div id="splash" class="splash">
         <div class="splash-content">
+            <div class="splash-kicker">Reviewer Briefing</div>
             <div class="gavel-icon">⚖️</div>
             <h1 class="splash-title">AI TRIBUNAL</h1>
             <p class="splash-sub">An Adversarial Legal Reasoning Environment</p>
             <p class="splash-note">No local setup is needed for judges. Start with the easy case, inspect suspicious evidence, and rule only after you have tested both sides.</p>
+            <div class="splash-proof-grid">
+                <div class="proof-card">
+                    <span class="proof-value">3</span>
+                    <span class="proof-label">adversarial case families</span>
+                </div>
+                <div class="proof-card">
+                    <span class="proof-value">4</span>
+                    <span class="proof-label">reward dimensions in one ruling loop</span>
+                </div>
+                <div class="proof-card">
+                    <span class="proof-value">1</span>
+                    <span class="proof-label">session-aware precedent history</span>
+                </div>
+                <div class="proof-card">
+                    <span class="proof-value">0</span>
+                    <span class="proof-label">local setup steps for judges</span>
+                </div>
+            </div>
+            <div class="splash-story-grid">
+                <article class="story-card">
+                    <span class="story-eyebrow">Problem</span>
+                    <h3>Can an agent stay fair under pressure?</h3>
+                    <p>This environment trains judgment, not recall. The agent must detect fabricated evidence, resist manipulation, and still issue a defensible ruling.</p>
+                </article>
+                <article class="story-card">
+                    <span class="story-eyebrow">Environment</span>
+                    <h3>Read, challenge, and rule inside a live hearing</h3>
+                    <p>Each case exposes statements, evidence, manipulation signals, and a strict step budget. The agent can inspect, question, and then rule.</p>
+                </article>
+                <article class="story-card">
+                    <span class="story-eyebrow">Reward Design</span>
+                    <h3>More than verdict accuracy</h3>
+                    <p>Scoring combines verdict quality, fabricated-evidence detection, precedent consistency, and manipulation resistance so the model cannot game one shortcut.</p>
+                </article>
+                <article class="story-card">
+                    <span class="story-eyebrow">Training Proof</span>
+                    <h3>Real OpenEnv loop, not a static prompt demo</h3>
+                    <p>The repo includes a runnable training script, committed reward plots, and a notebook so judges can inspect the learning pipeline rather than just the UI.</p>
+                </article>
+            </div>
+            <div class="splash-links">
+                <a href="https://github.com/AbhishekKharat04/ai-tribunal-env" target="_blank" rel="noreferrer">View GitHub repo</a>
+                <a href="https://github.com/AbhishekKharat04/ai-tribunal-env/blob/master/README.md" target="_blank" rel="noreferrer">Read README</a>
+                <a href="https://github.com/AbhishekKharat04/ai-tribunal-env/blob/master/blog.md" target="_blank" rel="noreferrer">Read writeup</a>
+            </div>
             <div class="splash-guide">
                 <div class="splash-guide-card">
                     <span class="guide-step">1</span>
@@ -34,6 +80,7 @@
                     <p>Use RULE only when your reasoning is clear enough to defend in writing.</p>
                 </div>
             </div>
+            <div class="splash-section-label">Choose a live hearing</div>
             <div class="case-select-grid">
                 <button class="case-btn" data-level="1" onclick="startCase(1)">
                     <span class="case-difficulty easy">EASY</span>

@@ -107,6 +107,19 @@ Parties actively try to manipulate the judge by withholding evidence, using inti
 
 ---
 
+## Compared With Official Examples
+
+The official [OpenEnv repo](https://github.com/meta-pytorch/OpenEnv) emphasizes a clean Gym-style `reset` / `step` / `state` contract, containerized deployment, and clear client-server separation. This project now follows that shape while targeting a more human-facing domain.
+
+The official [TRL OpenEnv Sudoku example](https://github.com/huggingface/trl/blob/main/examples/notebooks/openenv_sudoku_grpo.ipynb) is a great reference for canonical `GRPOTrainer(..., environment_factory=...)` usage on a compact puzzle environment. AI Tribunal is different in two ways:
+
+- It focuses on adversarial legal reasoning rather than a deterministic puzzle.
+- It uses a lightweight custom rollout loop so the training script stays runnable on commodity Kaggle / Colab GPUs while still interacting with a live OpenEnv deployment.
+
+If you are judging ambition rather than raw notebook length, this project is closer to a domain benchmark than a toy game clone.
+
+---
+
 ## Three Tasks
 
 | Task | Case | Difficulty | Steps | Key Challenge |
@@ -130,6 +143,10 @@ The repository includes committed training plots directly in the repo so validat
 ### Important note on the loss curve
 
 The current committed training run does **not** yet include a checked-in `loss_curve.png`. The training script has been updated to save one on the next rerun, but that image still needs to be generated from a real run before submission if the validator enforces a strict loss-curve requirement.
+
+## Kaggle Note
+
+If an older public Kaggle notebook still exists, it does **not** need to be deleted as long as your README points judges to the current source-of-truth assets in this repo. If you want to reduce confusion, rename the older notebook as an archived draft instead of removing it.
 
 ---
 
