@@ -12,7 +12,7 @@ The motivation is practical: real-world legal, HR, and consumer-resolution syste
 
 ## What the environment does
 
-The environment places an agent in the role of a tribunal judge across three case types:
+The environment places an agent in the role of a tribunal judge across eight curated hearings and a generated-case mode:
 
 - Consumer dispute
 - Employment termination dispute
@@ -46,9 +46,9 @@ Cases include intimidation signals, missing attachments, procedural pressure, an
 ## Deliverables
 
 - **Hugging Face Space:** [ai-tribunal-env](https://huggingface.co/spaces/AbhishekKharat11/ai-tribunal-env)
-- **GitHub Repository:** [AbhishekKharat04/ai-tribunal-env](https://github.com/AbhishekKharat04/ai-tribunal-env)
-- **Training Notebook (repo):** [AI_Tribunal_Training.ipynb](https://github.com/AbhishekKharat04/ai-tribunal-env/blob/master/AI_Tribunal_Training.ipynb)
-- **Training Script:** [train_tribunal_grpo.py](https://github.com/AbhishekKharat04/ai-tribunal-env/blob/master/train_tribunal_grpo.py)
+- **Training Notebook (HF repo):** [AI_Tribunal_Training.ipynb](https://huggingface.co/spaces/AbhishekKharat11/ai-tribunal-env/blob/main/AI_Tribunal_Training.ipynb)
+- **Training Script (HF repo):** [train_tribunal_grpo.py](https://huggingface.co/spaces/AbhishekKharat11/ai-tribunal-env/blob/main/train_tribunal_grpo.py)
+- **GitHub Mirror:** [AbhishekKharat04/ai-tribunal-env](https://github.com/AbhishekKharat04/ai-tribunal-env)
 
 ## Training artifacts
 
@@ -58,7 +58,9 @@ The repository includes the committed plots directly in-repo:
 
 ![Task score curves](task_scores.png)
 
-The currently committed training run stabilizes around the mid-0.6 reward range based on the executed notebook output. The training script has also been updated to save a `loss_curve.png`, which is now generated and committed from a real run to meet strict validator requirements.
+![Loss curve](loss_curve.png)
+
+The final committed training run produced real reward, task-score, and loss plots directly in the repository. That means judges do not need to rely on external dashboards or expired notebook outputs to verify that training actually ran.
 
 ## What changed during the final polish
 

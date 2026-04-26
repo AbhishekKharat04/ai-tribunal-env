@@ -17,19 +17,21 @@ tags:
 
 ## Submission Links
 - **Hugging Face Space:** [https://huggingface.co/spaces/AbhishekKharat11/ai-tribunal-env](https://huggingface.co/spaces/AbhishekKharat11/ai-tribunal-env)
-- **GitHub Repository:** [https://github.com/AbhishekKharat04/ai-tribunal-env](https://github.com/AbhishekKharat04/ai-tribunal-env)
-- **Training Notebook (repo):** [AI_Tribunal_Training.ipynb](https://github.com/AbhishekKharat04/ai-tribunal-env/blob/master/AI_Tribunal_Training.ipynb)
-- **Training Script:** [train_tribunal_grpo.py](https://github.com/AbhishekKharat04/ai-tribunal-env/blob/master/train_tribunal_grpo.py)
-- **Writeup / HF Blog Markdown:** [blog.md](https://github.com/AbhishekKharat04/ai-tribunal-env/blob/master/blog.md)
+- **Training Notebook (HF repo):** [AI_Tribunal_Training.ipynb](https://huggingface.co/spaces/AbhishekKharat11/ai-tribunal-env/blob/main/AI_Tribunal_Training.ipynb)
+- **Training Script (HF repo):** [train_tribunal_grpo.py](https://huggingface.co/spaces/AbhishekKharat11/ai-tribunal-env/blob/main/train_tribunal_grpo.py)
+- **Writeup / Blog Markdown (HF repo):** [blog.md](https://huggingface.co/spaces/AbhishekKharat11/ai-tribunal-env/blob/main/blog.md)
+- **GitHub Mirror:** [https://github.com/AbhishekKharat04/ai-tribunal-env](https://github.com/AbhishekKharat04/ai-tribunal-env)
 
 ## Submission Checklist
 - Public Hugging Face Space: reachable at the submitted URL.
-- Public GitHub repository: reachable at the submitted URL.
+- Optional GitHub mirror: reachable at the submitted URL.
 - OpenEnv manifest committed: `openenv.yaml`.
 - Training artifacts currently committed in-repo: `reward_curve.png`, `task_scores.png`, `loss_curve.png`.
 - Runnable training assets committed: `AI_Tribunal_Training.ipynb`, `train_tribunal_grpo.py`.
   The notebook is regenerated from the script and defaults to a faster `submission` profile for judge reruns.
 - Separate writeup markdown committed: `blog.md`.
+
+The Hugging Face Space and the linked HF-repo notebook/blog URLs above are the safest links to submit in the final Google Form.
 
 ## Final Submission Note
 
@@ -120,13 +122,20 @@ If you are judging ambition rather than raw notebook length, this project is clo
 
 ---
 
-## Three Tasks
+## Curated Case Suite
 
-| Task | Case | Difficulty | Steps | Key Challenge |
-|------|------|------------|-------|---------------|
-| 1 | Sharma vs MegaMart (Consumer) | Easy | 8 | Fabricated inspection report + nonexistent CCTV |
-| 2 | Meenakshi Iyer vs TechSoft (Employment) | Medium | 15 | Retroactive performance docs + biased HR panel |
-| 3 | Lakshmi Devi vs Sunrise Developers (Property) | Hard | 25 | Forged acquisition + corrupt official + political pressure |
+The benchmark now ships with **8 curated hearings** plus an on-demand **procedural case generator** for fresh randomized disputes.
+
+| Selector | Case | Domain | Difficulty | Key Challenge |
+|----------|------|--------|------------|---------------|
+| 1 | Sharma vs MegaMart | Consumer dispute | Easy | Fabricated inspection report + nonexistent CCTV |
+| 2 | Meenakshi Iyer vs TechSoft | Employment dispute | Medium | Retroactive performance docs + biased HR panel |
+| 3 | Lakshmi Devi vs Sunrise Developers & Municipal Authority | Property fraud | Hard | Forged acquisition + corrupt official + political pressure |
+| 4 | Priya Nair vs HealthTrack App | Data privacy | Easy-Medium | Fake consent log + unlawful data sale |
+| 5 | Vikram Malhotra vs ShieldLife Insurance | Insurance dispute | Medium | Backdated medical nondisclosure claim |
+| 6 | NeuralDraft Ltd. vs CodeForge AI | IP theft | Medium | Doctored source-control timeline |
+| 7 | Arjun Kapoor vs PremiumCare Hospital | Medical negligence | Hard | Missing chart pages + manipulated chronology |
+| 8 | Deepa Menon vs PaySwift Financial | Fintech / UPI fraud | Hard | Social-engineering blame shift + forged authorization trail |
 
 ---
 
@@ -206,7 +215,7 @@ The Hugging Face header-level Agents button is not required for this submission 
 | `/reset` | POST | Start a standard OpenEnv session; returns `session_id` and `episode_id` in the observation |
 | `/step` | POST | Take an action in a stateless HTTP call by passing `session_id` + `episode_id` back |
 | `/state` | GET | Current state |
-| `/tasks` | GET | All 3 tasks + action schema |
+| `/tasks` | GET | Curated task catalog + action schema |
 | `/grader` | POST | Grade an action |
 | `/baseline` | GET | Run baseline agent |
 | `/game/reset` | POST | Start a browser/game session |

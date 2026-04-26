@@ -60,7 +60,8 @@ def agents_md():
             [
                 "To use this application (ai-tribunal-env: adversarial legal reasoning benchmark):",
                 "API schema: GET https://abhishekkharat11-ai-tribunal-env.hf.space/openapi.json",
-                "Call endpoint: POST https://abhishekkharat11-ai-tribunal-env.hf.space/game/reset {\"task_level\": 1|2|3} then POST https://abhishekkharat11-ai-tribunal-env.hf.space/game/step {\"session_id\": \"...\", \"action\": {...}}",
+                "Call curated case: POST https://abhishekkharat11-ai-tribunal-env.hf.space/game/reset {\"task_level\": 1-8} then POST https://abhishekkharat11-ai-tribunal-env.hf.space/game/step {\"session_id\": \"...\", \"action\": {...}}",
+                "Call generated case: POST https://abhishekkharat11-ai-tribunal-env.hf.space/game/generate {\"level\": 1|2|3, \"domain\": \"optional\"} then POST https://abhishekkharat11-ai-tribunal-env.hf.space/game/step {\"session_id\": \"...\", \"action\": {...}}",
                 "Poll result: Not required; endpoints return synchronously",
                 "Auth: Public Space today. If the Space is made protected/private later, send Bearer $HF_TOKEN",
             ]
@@ -219,9 +220,10 @@ def game_cojudge(req: GameCoJudgeRequest):
 @app.get("/tasks")
 def get_tasks():
     tasks = []
-    for c in CASES:
+    for idx, c in enumerate(CASES, start=1):
         tasks.append({
-            "task_id": f"task_{c['level']}",
+            "task_id": f"task_{idx}",
+            "selector": idx,
             "name": c["name"],
             "level": c["level"],
             "difficulty": ["easy", "medium", "hard"][c["level"] - 1],
