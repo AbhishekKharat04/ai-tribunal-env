@@ -87,7 +87,7 @@ Here are the actual training curves from that run:
 
 ![Reward and task-score curves](reward_curve.png)
 
-![Loss curve](loss_curve.png)
+<img src="loss_curve.png" alt="Loss curve" width="600"/>
 
 The reward improved from 0.200 to 0.203 over the run. That's small, but it's real — the model is learning to make slightly better decisions each episode. With more compute and a longer run, this would improve significantly. The important thing is that the training loop works end-to-end: the environment serves cases, the model generates responses, the grader scores them, and the model updates.
 

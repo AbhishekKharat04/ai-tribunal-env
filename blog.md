@@ -51,7 +51,7 @@ Here are the training curves from my actual run:
 
 ![Reward and task-score curves](reward_curve.png)
 
-![Loss curve](loss_curve.png)
+<img src="loss_curve.png" alt="Loss curve" width="600"/>
 
 These are committed directly in the repo, not screenshots from a transient notebook.
 
