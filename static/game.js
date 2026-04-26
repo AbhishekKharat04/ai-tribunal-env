@@ -290,6 +290,38 @@ async function startCase(level) {
     }
 }
 
+// ─── RANDOM / GENERATED CASE ───────────────────────────────
+async function startRandomCase(level) {
+    const allBtns = document.querySelectorAll(".case-btn");
+    allBtns.forEach(b => { b.disabled = true; b.style.opacity = "0.6"; });
+
+    try {
+        const res = await fetch(`${BASE}/game/generate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ level }),
+        });
+        const data = await res.json();
+        if (data.error) { alert("Generator error: " + data.error); return; }
+        gameSessionId = data.session_id;
+        gameState = data.observation;
+        coJudgeRemainingHints = data.ai_judge?.calls_remaining ?? 0;
+        isDone = false;
+        resetActionComposer();
+        document.getElementById("splash").classList.add("hidden");
+        document.getElementById("game").classList.remove("hidden");
+        renderGame();
+        showCoJudgeResult("", null);
+        updateCoJudgeSummary();
+        maybeOpenTour();
+    } catch (err) {
+        alert("Could not generate case: " + err.message);
+        console.error(err);
+    } finally {
+        allBtns.forEach(b => { b.disabled = false; b.style.opacity = ""; });
+    }
+}
+
 function backToSplash() {
     closeTour();
     document.getElementById("game").classList.add("hidden");

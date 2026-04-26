@@ -20,16 +20,16 @@
             <p class="splash-note">No local setup is needed for judges. Start with the easy case, inspect suspicious evidence, and rule only after you have tested both sides.</p>
             <div class="splash-proof-grid">
                 <div class="proof-card">
-                    <span class="proof-value">3</span>
+                    <span class="proof-value">8</span>
                     <span class="proof-label">adversarial case families</span>
                 </div>
                 <div class="proof-card">
-                    <span class="proof-value">4</span>
-                    <span class="proof-label">reward dimensions in one ruling loop</span>
+                    <span class="proof-value">5</span>
+                    <span class="proof-label">reward dimensions per ruling</span>
                 </div>
                 <div class="proof-card">
-                    <span class="proof-value">1</span>
-                    <span class="proof-label">session-aware precedent history</span>
+                    <span class="proof-value">∞</span>
+                    <span class="proof-label">dynamically generated cases</span>
                 </div>
                 <div class="proof-card">
                     <span class="proof-value">0</span>
@@ -88,17 +88,68 @@
                     <span class="case-type">Consumer Dispute</span>
                     <span class="case-steps">8 Steps</span>
                 </button>
+                <button class="case-btn" data-level="4" onclick="startCase(4)">
+                    <span class="case-difficulty easy">EASY</span>
+                    <span class="case-name">Priya Nair vs HealthTrack</span>
+                    <span class="case-type">Data Privacy</span>
+                    <span class="case-steps">10 Steps</span>
+                </button>
                 <button class="case-btn" data-level="2" onclick="startCase(2)">
                     <span class="case-difficulty medium">MEDIUM</span>
                     <span class="case-name">Iyer vs TechSoft</span>
                     <span class="case-type">Employment Dispute</span>
                     <span class="case-steps">15 Steps</span>
                 </button>
+                <button class="case-btn" data-level="5" onclick="startCase(5)">
+                    <span class="case-difficulty medium">MEDIUM</span>
+                    <span class="case-name">Malhotra vs ShieldLife</span>
+                    <span class="case-type">Insurance Fraud</span>
+                    <span class="case-steps">14 Steps</span>
+                </button>
+                <button class="case-btn" data-level="6" onclick="startCase(6)">
+                    <span class="case-difficulty medium">MEDIUM</span>
+                    <span class="case-name">NeuralDraft vs CodeForge</span>
+                    <span class="case-type">IP / Trade Secret</span>
+                    <span class="case-steps">18 Steps</span>
+                </button>
                 <button class="case-btn" data-level="3" onclick="startCase(3)">
                     <span class="case-difficulty hard">HARD</span>
                     <span class="case-name">Lakshmi Devi vs Sunrise</span>
                     <span class="case-type">Property Fraud</span>
                     <span class="case-steps">25 Steps</span>
+                </button>
+                <button class="case-btn" data-level="7" onclick="startCase(7)">
+                    <span class="case-difficulty hard">HARD</span>
+                    <span class="case-name">Kapoor vs PremiumCare</span>
+                    <span class="case-type">Medical Negligence</span>
+                    <span class="case-steps">20 Steps</span>
+                </button>
+                <button class="case-btn" data-level="8" onclick="startCase(8)">
+                    <span class="case-difficulty hard">HARD</span>
+                    <span class="case-name">Menon vs PaySwift</span>
+                    <span class="case-type">Fintech Fraud</span>
+                    <span class="case-steps">22 Steps</span>
+                </button>
+            </div>
+            <div class="splash-section-label" style="margin-top:1.5rem;">Or generate a unique case</div>
+            <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-bottom:0.5rem;">
+                <button class="case-btn" style="max-width:280px;" onclick="startRandomCase(1)">
+                    <span class="case-difficulty easy">RANDOM EASY</span>
+                    <span class="case-name">Generate Novel Case</span>
+                    <span class="case-type">AI-Generated · Level 1</span>
+                    <span class="case-steps">Dynamic</span>
+                </button>
+                <button class="case-btn" style="max-width:280px;" onclick="startRandomCase(2)">
+                    <span class="case-difficulty medium">RANDOM MEDIUM</span>
+                    <span class="case-name">Generate Novel Case</span>
+                    <span class="case-type">AI-Generated · Level 2</span>
+                    <span class="case-steps">Dynamic</span>
+                </button>
+                <button class="case-btn" style="max-width:280px;" onclick="startRandomCase(3)">
+                    <span class="case-difficulty hard">RANDOM HARD</span>
+                    <span class="case-name">Generate Novel Case</span>
+                    <span class="case-type">AI-Generated · Level 3</span>
+                    <span class="case-steps">Dynamic</span>
                 </button>
             </div>
             <p class="splash-hint">The in-app guided tour opens automatically on your first case. You can reopen it any time with the help button inside the courtroom.</p>

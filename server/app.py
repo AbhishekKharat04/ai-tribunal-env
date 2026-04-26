@@ -14,6 +14,7 @@ from models import TribunalAction, TribunalObservation
 from server.ai_judge import request_hint as request_ai_judge_hint
 from server.tribunal_environment import TribunalEnvironment
 from server.cases import CASES
+from server.case_generator import generate_case as _generate_case
 
 
 def create_environment() -> TribunalEnvironment:
@@ -91,7 +92,7 @@ class GameCoJudgeRequest(BaseModel):
 
 @app.post("/game/reset")
 def game_reset(req: GameResetRequest):
-    level = max(1, min(3, req.task_level))
+    level = max(1, min(8, req.task_level))  # supports all 8 curated cases
     session_id = req.session_id or str(uuid4())
     if not req.continue_session:
         TribunalEnvironment.reset_session(session_id)
@@ -106,6 +107,47 @@ def game_reset(req: GameResetRequest):
             "max_calls_per_session": AI_JUDGE_MAX_CALLS_PER_SESSION,
             "calls_used": _ai_judge_calls.get(session_id, 0),
             "calls_remaining": max(0, AI_JUDGE_MAX_CALLS_PER_SESSION - _ai_judge_calls.get(session_id, 0)),
+        },
+    })
+
+
+class GameGenerateRequest(BaseModel):
+    level: Optional[int] = None  # 1=easy, 2=medium, 3=hard. None = random
+    domain: Optional[str] = None  # force a specific case_type
+    seed: Optional[int] = None  # for reproducibility
+
+
+@app.post("/game/generate")
+def game_generate(req: GameGenerateRequest):
+    """Generate a novel procedural case and start a new game session."""
+    import random
+    seed = req.seed if req.seed is not None else random.randint(0, 999999)
+    case = _generate_case(level=req.level, domain=req.domain, seed=seed)
+    session_id = str(uuid4())
+    TribunalEnvironment.reset_session(session_id)
+    game_env = TribunalEnvironment(task_level=case["level"])
+    game_env._case = case  # inject generated case directly
+    game_env._max_steps = case["max_steps"]
+    game_env._step = 0
+    game_env._done = False
+    game_env._history = []
+    game_env._cumulative_score = 0.0
+    _game_envs[session_id] = game_env
+    obs = game_env.reset(task_level=case["level"], session_id=session_id)
+    return JSONResponse({
+        "session_id": session_id,
+        "generated_case": {
+            "title": case["title"],
+            "case_type": case["case_type"],
+            "level": case["level"],
+            "max_steps": case["max_steps"],
+            "seed": seed,
+        },
+        "observation": obs.model_dump(),
+        "ai_judge": {
+            "max_calls_per_session": AI_JUDGE_MAX_CALLS_PER_SESSION,
+            "calls_used": 0,
+            "calls_remaining": AI_JUDGE_MAX_CALLS_PER_SESSION,
         },
     })
 
