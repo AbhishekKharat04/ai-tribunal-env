@@ -17,6 +17,11 @@ The environment places an agent in the role of a tribunal judge across three cas
 - Consumer dispute
 - Employment termination dispute
 - Property fraud dispute
+- Data privacy (DPDP Act)
+- Insurance fraud
+- Intellectual property theft
+- Medical negligence
+- Fintech / UPI fraud
 
 At each step, the agent can inspect evidence, question either side, and issue a ruling. The environment scores not only the final verdict, but also whether the agent:
 
@@ -53,7 +58,7 @@ The repository includes the committed plots directly in-repo:
 
 ![Task score curves](task_scores.png)
 
-The currently committed training run stabilizes around the mid-0.6 reward range based on the executed notebook output. The training script has also been updated to save a `loss_curve.png` on the next rerun, but that file still needs to be generated from a real run if a strict validator requires both reward and loss curves.
+The currently committed training run stabilizes around the mid-0.6 reward range based on the executed notebook output. The training script has also been updated to save a `loss_curve.png`, which is now generated and committed from a real run to meet strict validator requirements.
 
 ## What changed during the final polish
 
@@ -63,7 +68,7 @@ Before submission, I tightened the environment to match the standard OpenEnv HTT
 
 If I continue this project beyond the hackathon, the next steps are:
 
-- procedural case generation instead of only hand-authored cases,
+- integration with live LLMs acting as prosecutors and defenders,
 - larger held-out evaluation splits,
 - multi-agent courtroom roles,
 - and stronger training runs on Hugging Face Jobs.
