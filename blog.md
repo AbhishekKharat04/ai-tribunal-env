@@ -54,9 +54,7 @@ Cases include intimidation signals, missing attachments, procedural pressure, an
 
 The repository includes the committed plots directly in-repo:
 
-![Reward curve](reward_curve.png)
-
-![Task score curves](task_scores.png)
+![Training Results (Reward and Task Scores)](reward_curve.png)
 
 ![Loss curve](loss_curve.png)
 
