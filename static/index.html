@@ -216,6 +216,47 @@
                     <h4>📜 Court Record</h4>
                     <p id="feedback-text"></p>
                 </div>
+
+                <div class="bench-insights">
+                    <div class="insight-card insight-card-wide">
+                        <div class="insight-header">
+                            <span class="insight-kicker">Bench Insights</span>
+                            <span id="insight-step-copy" class="insight-status">Use the early turns to challenge weak records.</span>
+                        </div>
+                        <div id="snapshot-metrics" class="snapshot-metrics"></div>
+                        <div class="hearing-progress">
+                            <div class="hearing-progress-bar">
+                                <span id="hearing-progress-fill"></span>
+                            </div>
+                            <p id="hearing-progress-copy" class="hearing-progress-copy"></p>
+                        </div>
+                    </div>
+
+                    <div class="insight-card">
+                        <div class="insight-header">
+                            <span class="insight-kicker">Case Brief</span>
+                            <span id="brief-badge" class="insight-badge">Live hearing</span>
+                        </div>
+                        <p id="case-brief" class="insight-copy"></p>
+                        <div id="case-flags" class="case-flags"></div>
+                    </div>
+
+                    <div class="insight-card insight-card-map">
+                        <div class="insight-header">
+                            <span class="insight-kicker">Credibility Map</span>
+                            <span class="insight-status">Visible confidence by evidence item</span>
+                        </div>
+                        <div id="credibility-map" class="credibility-map"></div>
+                    </div>
+
+                    <div class="insight-card">
+                        <div class="insight-header">
+                            <span class="insight-kicker">Selected Evidence</span>
+                            <span id="selected-evidence-label" class="insight-status">Click any card to inspect it in full</span>
+                        </div>
+                        <div id="selected-evidence-card" class="selected-evidence-card"></div>
+                    </div>
+                </div>
             </section>
 
             <!-- RIGHT: Action Panel -->

@@ -9,6 +9,7 @@ let gameState = null;
 let isDone = false;
 let gameSessionId = null;
 let coJudgeRemainingHints = 0;
+let selectedEvidenceId = null;
 const TOUR_STORAGE_KEY = "ai-tribunal-tour-seen";
 const TOUR_STEPS = [
     {
@@ -166,6 +167,187 @@ function updateActionGuidance(action = currentAction) {
     body.textContent = guidance.body;
 }
 
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+}
+
+function getCredibilityTone(score) {
+    if (score >= 0.85) {
+        return { color: "#2ecc71", label: "High confidence" };
+    }
+    if (score >= 0.65) {
+        return { color: "#f39c12", label: "Mixed confidence" };
+    }
+    return { color: "#e74c3c", label: "Fragile record" };
+}
+
+function inferEvidenceTestingNote(ev) {
+    const score = ev?.credibility_score ?? 0.5;
+    const description = (ev?.description || "").toLowerCase();
+
+    if (score < 0.65 && ev?.submitted_by === "defendant") {
+        return "This is a defense-side record with weak visible credibility. It is a strong challenge candidate before you trust the defense narrative.";
+    }
+    if (description.includes("log") || description.includes("report") || description.includes("memo") || description.includes("policy")) {
+        return "Internal records can sound official while hiding missing metadata. Cross-check authorship, timing, and whether the source can be independently verified.";
+    }
+    if (score >= 0.85) {
+        return "High visible credibility does not end the inquiry. Treat this as strong surface evidence, then test whether the underlying provenance actually holds up.";
+    }
+    return "This item deserves comparison against the opposing side's timeline, because medium-confidence evidence often becomes decisive only after contradiction testing.";
+}
+
+function selectEvidence(evidenceId) {
+    selectedEvidenceId = evidenceId;
+    document.getElementById("inp-target").value = evidenceId;
+    document.querySelectorAll(".evidence-card").forEach((card) => {
+        card.classList.toggle("selected", card.dataset.evidenceId === evidenceId);
+    });
+    if (gameState) {
+        renderBenchInsights(gameState);
+    }
+}
+
+function renderBenchInsights(obs) {
+    const evidenceItems = obs.evidence_items || [];
+    const plaintiffItems = evidenceItems.filter((ev) => ev.submitted_by === "plaintiff");
+    const defendantItems = evidenceItems.filter((ev) => ev.submitted_by === "defendant");
+    const avgCredibility = evidenceItems.length
+        ? evidenceItems.reduce((sum, ev) => sum + (ev.credibility_score || 0), 0) / evidenceItems.length
+        : 0;
+    const stepsUsed = obs.time_step || 0;
+    const maxSteps = Math.max(obs.max_steps || 1, 1);
+    const stepsRemaining = Math.max(maxSteps - stepsUsed, 0);
+    const progressPercent = Math.min(100, Math.round((stepsUsed / maxSteps) * 100));
+    const generatedCase = (obs.task_name || "").startsWith("Generated_");
+
+    if (selectedEvidenceId && !evidenceItems.some((ev) => ev.evidence_id === selectedEvidenceId)) {
+        selectedEvidenceId = null;
+    }
+    if (!selectedEvidenceId && evidenceItems.length) {
+        selectedEvidenceId = evidenceItems[0].evidence_id;
+    }
+
+    const suspiciousItems = [...evidenceItems]
+        .sort((a, b) => (a.credibility_score || 0) - (b.credibility_score || 0))
+        .slice(0, 2)
+        .map((ev) => ev.evidence_id);
+
+    const snapshotMetrics = document.getElementById("snapshot-metrics");
+    snapshotMetrics.innerHTML = `
+        <div class="metric-tile">
+            <span class="metric-label">Evidence Board</span>
+            <span class="metric-value">${evidenceItems.length}</span>
+            <span class="metric-subvalue">${plaintiffItems.length} plaintiff · ${defendantItems.length} defense</span>
+        </div>
+        <div class="metric-tile">
+            <span class="metric-label">Visible Credibility</span>
+            <span class="metric-value">${Math.round(avgCredibility * 100)}%</span>
+            <span class="metric-subvalue">Average surface confidence across the board</span>
+        </div>
+        <div class="metric-tile">
+            <span class="metric-label">Step Budget</span>
+            <span class="metric-value">${stepsRemaining}</span>
+            <span class="metric-subvalue">${stepsUsed} used · ${maxSteps} total</span>
+        </div>
+        <div class="metric-tile">
+            <span class="metric-label">Pressure Signals</span>
+            <span class="metric-value">${(obs.manipulative_signals || []).length}</span>
+            <span class="metric-subvalue">${suspiciousItems.length ? `Weakest: ${suspiciousItems.join(", ")}` : "No weak record yet"}</span>
+        </div>
+    `;
+
+    document.getElementById("hearing-progress-fill").style.width = `${progressPercent}%`;
+    document.getElementById("hearing-progress-copy").textContent =
+        progressPercent < 35
+            ? `Early hearing stage. Use these turns to probe the weakest records before committing to a final theory.`
+            : progressPercent < 75
+                ? `Mid-hearing. Start turning contradictions into a concrete ruling theory while you still have ${stepsRemaining} move${stepsRemaining === 1 ? "" : "s"} left.`
+                : `Late hearing. You have ${stepsRemaining} move${stepsRemaining === 1 ? "" : "s"} left, so every action should tighten the final judgment.`;
+    document.getElementById("insight-step-copy").textContent = generatedCase
+        ? "Generated hearing: fresh case structure, same judging mechanics."
+        : "Curated hearing: benchmark case with fixed adversarial traps.";
+
+    document.getElementById("brief-badge").textContent = generatedCase
+        ? "Generated case"
+        : `Task ${obs.task_level}`;
+    document.getElementById("case-brief").textContent =
+        obs.task_description || obs.feedback || "Use the evidence board to build a defensible ruling theory.";
+
+    const caseFlags = document.getElementById("case-flags");
+    caseFlags.innerHTML = "";
+    [
+        `${(obs.case_type || "case").replaceAll("_", " ")}`,
+        `${obs.max_steps || "?"} total steps`,
+        `${(obs.manipulative_signals || []).length} manipulation flags`,
+        `${(obs.consistency_score || 1).toFixed(2)} consistency`,
+    ].forEach((flag) => {
+        const chip = document.createElement("span");
+        chip.className = "case-flag";
+        chip.textContent = flag;
+        caseFlags.appendChild(chip);
+    });
+
+    const credibilityMap = document.getElementById("credibility-map");
+    credibilityMap.innerHTML = "";
+    evidenceItems.forEach((ev) => {
+        const tone = getCredibilityTone(ev.credibility_score || 0);
+        const row = document.createElement("div");
+        row.className = `credibility-row${selectedEvidenceId === ev.evidence_id ? " selected" : ""}`;
+        row.onclick = () => selectEvidence(ev.evidence_id);
+        row.innerHTML = `
+            <div class="credibility-row-head">
+                <span class="credibility-row-id">${escapeHtml(ev.evidence_id)}</span>
+                <span class="credibility-row-score">${Math.round((ev.credibility_score || 0) * 100)}%</span>
+            </div>
+            <div class="credibility-row-meta">${escapeHtml(ev.submitted_by === "plaintiff" ? "Plaintiff-submitted" : "Defense-submitted")} · ${escapeHtml(tone.label)}</div>
+            <div class="credibility-row-bar">
+                <span class="credibility-row-fill" style="width:${(ev.credibility_score || 0) * 100}%; background:${tone.color};"></span>
+            </div>
+        `;
+        credibilityMap.appendChild(row);
+    });
+
+    const selectedEvidence = evidenceItems.find((ev) => ev.evidence_id === selectedEvidenceId);
+    const selectedEvidenceLabel = document.getElementById("selected-evidence-label");
+    const selectedEvidenceCard = document.getElementById("selected-evidence-card");
+    if (!selectedEvidence) {
+        selectedEvidenceLabel.textContent = "Click any card to inspect it in full";
+        selectedEvidenceCard.innerHTML = `<div class="selected-evidence-empty">Evidence notes will appear here once a card is selected.</div>`;
+        return;
+    }
+
+    const selectedTone = getCredibilityTone(selectedEvidence.credibility_score || 0);
+    selectedEvidenceLabel.textContent = `${selectedEvidence.evidence_id} · ${selectedTone.label}`;
+    selectedEvidenceCard.innerHTML = `
+        <div class="selected-evidence-top">
+            <div>
+                <div class="selected-evidence-party">${escapeHtml(selectedEvidence.submitted_by === "plaintiff" ? "Plaintiff-submitted" : "Defense-submitted")}</div>
+                <div class="selected-evidence-title">${escapeHtml(selectedEvidence.evidence_id)} · ${escapeHtml(selectedEvidence.evidence_type || "evidence")}</div>
+            </div>
+            <span class="case-flag">${Math.round((selectedEvidence.credibility_score || 0) * 100)}% visible credibility</span>
+        </div>
+        <p class="selected-evidence-description">${escapeHtml(selectedEvidence.description || "")}</p>
+        <div class="selected-evidence-notes">
+            <div class="selected-note">
+                <span class="selected-note-label">Why it matters</span>
+                <span class="selected-note-value">${escapeHtml(inferEvidenceTestingNote(selectedEvidence))}</span>
+            </div>
+            <div class="selected-note">
+                <span class="selected-note-label">Best courtroom move</span>
+                <span class="selected-note-value">${selectedTone.label === "Fragile record"
+                    ? "Challenge this record directly or question the side that submitted it."
+                    : "Cross-check this against an opposing document before you give it decisive weight."}</span>
+            </div>
+        </div>
+    `;
+}
+
 function resetActionComposer() {
     currentAction = "examine_evidence";
     document.querySelectorAll(".action-type-btn").forEach(btn => btn.classList.remove("active"));
@@ -179,6 +361,7 @@ function resetActionComposer() {
     document.getElementById("inp-target").value = "";
     document.getElementById("inp-reasoning").value = "";
     document.getElementById("inp-verdict-reasoning").value = "";
+    selectedEvidenceId = null;
     updateActionGuidance();
 }
 
@@ -337,6 +520,13 @@ function backToSplash() {
 // ─── RENDER GAME STATE ──────────────────────────────────────
 function renderGame() {
     const obs = gameState;
+    const evidenceItems = obs.evidence_items || [];
+    if (selectedEvidenceId && !evidenceItems.some((ev) => ev.evidence_id === selectedEvidenceId)) {
+        selectedEvidenceId = null;
+    }
+    if (!selectedEvidenceId && evidenceItems.length) {
+        selectedEvidenceId = evidenceItems[0].evidence_id;
+    }
 
     // HUD
     document.getElementById("hud-step").textContent = `${obs.time_step || 0}/${obs.max_steps || "?"}`;
@@ -353,7 +543,7 @@ function renderGame() {
     // Evidence
     const grid = document.getElementById("evidence-grid");
     grid.innerHTML = "";
-    (obs.evidence_items || []).forEach(ev => {
+    evidenceItems.forEach(ev => {
         const cred = ev.credibility_score || 0.5;
         let credColor;
         if (cred >= 0.8) credColor = "#2ecc71";
@@ -362,10 +552,12 @@ function renderGame() {
 
         const card = document.createElement("div");
         card.className = "evidence-card";
-        card.onclick = () => {
-            document.getElementById("inp-target").value = ev.evidence_id;
-            document.querySelectorAll(".evidence-card").forEach(c => c.classList.remove("selected"));
+        card.dataset.evidenceId = ev.evidence_id;
+        if (selectedEvidenceId === ev.evidence_id) {
             card.classList.add("selected");
+        }
+        card.onclick = () => {
+            selectEvidence(ev.evidence_id);
         };
         card.innerHTML = `
             <div class="ev-header">
@@ -410,8 +602,10 @@ function renderGame() {
         document.getElementById("feedback-text").textContent = "";
     }
 
+    renderBenchInsights(obs);
+
     // Sliders
-    buildSliders(obs.evidence_items || []);
+    buildSliders(evidenceItems);
     updateActionGuidance();
     updateCoJudgeSummary();
     refreshTourHighlight();
