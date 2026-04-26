@@ -613,7 +613,7 @@ body {
 
 .bench-insights {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(12, minmax(0, 1fr));
     gap: 12px;
 }
 
@@ -622,16 +622,24 @@ body {
         linear-gradient(180deg, rgba(26,26,46,0.96), rgba(16,16,30,0.96));
     border: 1px solid rgba(255,255,255,0.06);
     border-radius: 14px;
-    padding: 16px;
-    min-height: 200px;
+    padding: 12px 14px;
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 
-.insight-card-wide,
-.insight-card-map {
+.bench-insights > .insight-card:nth-child(1),
+.bench-insights > .insight-card:nth-child(4) {
     grid-column: 1 / -1;
+}
+
+.bench-insights > .insight-card:nth-child(2) {
+    grid-column: span 4;
+}
+
+.bench-insights > .insight-card:nth-child(3) {
+    grid-column: span 8;
 }
 
 .insight-header {
@@ -737,8 +745,12 @@ body {
 
 .insight-copy {
     color: var(--text);
-    font-size: 0.9rem;
-    line-height: 1.7;
+    font-size: 0.84rem;
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .case-flags {
@@ -762,7 +774,7 @@ body {
 .credibility-map {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px 14px;
+    gap: 10px 12px;
 }
 
 .credibility-row {
@@ -826,18 +838,28 @@ body {
 }
 
 .selected-evidence-card {
-    margin-top: auto;
-    min-height: 160px;
-    padding: 14px;
-    border-radius: 14px;
-    background: rgba(4,5,12,0.42);
-    border: 1px solid rgba(255,255,255,0.06);
+    min-height: 0;
 }
 
 .selected-evidence-empty {
     color: var(--text-dim);
     font-size: 0.82rem;
     line-height: 1.55;
+}
+
+.selected-evidence-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+    gap: 12px;
+    align-items: stretch;
+}
+
+.selected-evidence-main,
+.selected-note {
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
 }
 
 .selected-evidence-top {
@@ -863,22 +885,15 @@ body {
 
 .selected-evidence-description {
     color: var(--text);
-    font-size: 0.88rem;
-    line-height: 1.7;
-    margin-bottom: 12px;
+    font-size: 0.84rem;
+    line-height: 1.6;
+    margin-top: 10px;
 }
 
 .selected-evidence-notes {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
-}
-
-.selected-note {
-    padding: 10px 12px;
-    border-radius: 12px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.05);
 }
 
 .selected-note-label {
@@ -894,6 +909,10 @@ body {
     color: var(--text);
     font-size: 0.8rem;
     line-height: 1.55;
+}
+
+.bench-insights .insight-card:nth-child(4) .insight-header {
+    margin-bottom: 2px;
 }
 
 /* ─── ACTION PANEL ───────────────────────────────────────── */
@@ -1524,8 +1543,16 @@ select.game-input { cursor: pointer; }
     .bench-insights,
     .credibility-map,
     .snapshot-metrics,
-    .selected-evidence-notes {
+    .selected-evidence-notes,
+    .selected-evidence-shell {
         grid-template-columns: 1fr;
+    }
+    .bench-insights {
+        grid-template-columns: 1fr;
+    }
+    .bench-insights > .insight-card:nth-child(2),
+    .bench-insights > .insight-card:nth-child(3) {
+        grid-column: 1 / -1;
     }
     .splash-title { font-size: 2.5rem; }
     .splash-proof-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

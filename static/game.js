@@ -325,24 +325,28 @@ function renderBenchInsights(obs) {
     const selectedTone = getCredibilityTone(selectedEvidence.credibility_score || 0);
     selectedEvidenceLabel.textContent = `${selectedEvidence.evidence_id} · ${selectedTone.label}`;
     selectedEvidenceCard.innerHTML = `
-        <div class="selected-evidence-top">
-            <div>
-                <div class="selected-evidence-party">${escapeHtml(selectedEvidence.submitted_by === "plaintiff" ? "Plaintiff-submitted" : "Defense-submitted")}</div>
-                <div class="selected-evidence-title">${escapeHtml(selectedEvidence.evidence_id)} · ${escapeHtml(selectedEvidence.evidence_type || "evidence")}</div>
+        <div class="selected-evidence-shell">
+            <div class="selected-evidence-main">
+                <div class="selected-evidence-top">
+                    <div>
+                        <div class="selected-evidence-party">${escapeHtml(selectedEvidence.submitted_by === "plaintiff" ? "Plaintiff-submitted" : "Defense-submitted")}</div>
+                        <div class="selected-evidence-title">${escapeHtml(selectedEvidence.evidence_id)} · ${escapeHtml(selectedEvidence.evidence_type || "evidence")}</div>
+                    </div>
+                    <span class="case-flag">${Math.round((selectedEvidence.credibility_score || 0) * 100)}% visible credibility</span>
+                </div>
+                <p class="selected-evidence-description">${escapeHtml(selectedEvidence.description || "")}</p>
             </div>
-            <span class="case-flag">${Math.round((selectedEvidence.credibility_score || 0) * 100)}% visible credibility</span>
-        </div>
-        <p class="selected-evidence-description">${escapeHtml(selectedEvidence.description || "")}</p>
-        <div class="selected-evidence-notes">
-            <div class="selected-note">
-                <span class="selected-note-label">Why it matters</span>
-                <span class="selected-note-value">${escapeHtml(inferEvidenceTestingNote(selectedEvidence))}</span>
-            </div>
-            <div class="selected-note">
-                <span class="selected-note-label">Best courtroom move</span>
-                <span class="selected-note-value">${selectedTone.label === "Fragile record"
-                    ? "Challenge this record directly or question the side that submitted it."
-                    : "Cross-check this against an opposing document before you give it decisive weight."}</span>
+            <div class="selected-evidence-notes">
+                <div class="selected-note">
+                    <span class="selected-note-label">Why it matters</span>
+                    <span class="selected-note-value">${escapeHtml(inferEvidenceTestingNote(selectedEvidence))}</span>
+                </div>
+                <div class="selected-note">
+                    <span class="selected-note-label">Best courtroom move</span>
+                    <span class="selected-note-value">${selectedTone.label === "Fragile record"
+                        ? "Challenge this record directly or question the side that submitted it."
+                        : "Cross-check this against an opposing document before you give it decisive weight."}</span>
+                </div>
             </div>
         </div>
     `;
